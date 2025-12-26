@@ -27,10 +27,11 @@
 | 라우팅 | TanStack Router | 1.x |
 | 스타일링 | Tailwind CSS | 4.x |
 | 빌드 | Vite | 7.x |
-| ORM | Prisma | 7.x |
-| 데이터베이스 | PostgreSQL | Supabase |
+| 데이터베이스 | pg + Zod | PostgreSQL (Supabase) |
 | 인증 | better-auth | 1.x |
+| 이메일 | Resend | - |
 | 서버 | Nitro | - |
+| 배포 | Vercel | - |
 
 ---
 
@@ -78,13 +79,21 @@ sori/
 │   │       ├── SoriWidget.tsx  # React 컴포넌트
 │   │       └── useSori.ts      # React 훅
 │   │
-│   └── database/               # Prisma 패키지
-│       ├── prisma/
-│       │   └── schema.prisma   # DB 스키마
-│       ├── src/
-│       │   ├── client.ts       # PrismaClient 설정
-│       │   └── index.ts        # 익스포트
-│       └── generated/          # 생성된 클라이언트
+│   └── database/               # 데이터베이스 패키지 (pg 직접 사용)
+│       └── src/
+│           ├── client.ts       # pg Pool 설정
+│           ├── index.ts        # 익스포트
+│           ├── types.ts        # Zod 추론 타입
+│           ├── schemas/        # Zod 스키마
+│           │   ├── feedback.ts
+│           │   ├── project.ts
+│           │   ├── reply.ts
+│           │   └── ...
+│           └── queries/        # SQL 쿼리 함수
+│               ├── feedback.ts
+│               ├── project.ts
+│               ├── reply.ts
+│               └── ...
 │
 └── tooling/
     └── tsconfig/               # 공유 TS 설정
@@ -99,81 +108,86 @@ sori/
 ```
 User (1) ←→ (N) OrganizationMember (N) ←→ (1) Organization
                                               │
-                                              ├── (N) Project
+                                              ├── (N) Project ──── apiKey (Public API용)
                                               │       │
                                               │       └── (N) Feedback
+                                              │                  │
+                                              │                  └── (N) Reply
                                               │
-                                              ├── (N) Webhook
-                                              │
-                                              └── apiKey, webhookUrl (legacy)
+                                              └── (N) Webhook
 ```
 
-### 주요 모델
+### 주요 모델 (Zod 스키마)
 
-#### User (Better Auth 관리)
-```prisma
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  name          String?
-  memberships   OrganizationMember[]
-  sessions      Session[]
-  accounts      Account[]
-}
-```
-
-#### Organization (테넌트)
-```prisma
-model Organization {
-  id             String   @id @default(cuid())
-  name           String
-  slug           String   @unique      # URL용 슬러그
-  apiKey         String   @unique      # API 인증용
-  webhookUrl     String?               # 웹훅 URL
-  plan           Plan     @default(FREE)
-  members        OrganizationMember[]
-  projects       Project[]
-}
-```
-
-#### OrganizationMember (N:N 관계)
-```prisma
-model OrganizationMember {
-  id             String       @id
-  role           MemberRole   @default(MEMBER)  # OWNER, ADMIN, MEMBER
-  userId         String
-  organizationId String
-  @@unique([userId, organizationId])
-}
-```
-
-#### Project (위젯 인스턴스)
-```prisma
-model Project {
-  id             String       @id
-  name           String
-  allowedOrigins String[]     # CORS 허용 도메인
-  widgetConfig   Json?        # 위젯 설정 (색상, 위치 등)
-  organizationId String
-  feedbacks      Feedback[]
-}
+#### Project (위젯 인스턴스 + API 키)
+```typescript
+// packages/database/src/schemas/project.ts
+export const ProjectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  allowedOrigins: z.array(z.string()),
+  widgetConfig: z.record(z.unknown()).nullable(),
+  organizationId: z.string(),
+  apiKey: z.string().nullable(),           // Public API 키
+  apiKeyCreatedAt: z.coerce.date().nullable(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
 ```
 
 #### Feedback (수집된 피드백)
-```prisma
-model Feedback {
-  id         String         @id
-  type       FeedbackType   # BUG, INQUIRY, FEATURE
-  message    String
-  email      String?
-  status     FeedbackStatus @default(OPEN)
-  priority   Priority?
-  metadata   Json?          # URL, userAgent 등
-  projectId  String
-  createdAt  DateTime
-  resolvedAt DateTime?
-}
+```typescript
+// packages/database/src/schemas/feedback.ts
+export const FeedbackSchema = z.object({
+  id: z.string(),
+  type: z.enum(["BUG", "INQUIRY", "FEATURE"]),
+  message: z.string(),
+  email: z.string().nullable(),
+  status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).nullable(),
+  metadata: z.record(z.unknown()).nullable(),
+  projectId: z.string(),
+  createdAt: z.coerce.date(),
+  resolvedAt: z.coerce.date().nullable(),
+});
+```
+
+#### Reply (피드백 답변) - NEW
+```typescript
+// packages/database/src/schemas/reply.ts
+export const ReplySchema = z.object({
+  id: z.string(),
+  content: z.string(),
+  feedbackId: z.string(),
+  authorId: z.string().nullable(),
+  authorName: z.string().nullable(),
+  authorType: z.enum(["USER", "ADMIN", "API"]),
+  isInternal: z.boolean(),        // true면 API에서 숨김
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+```
+
+### 쿼리 함수 사용법
+
+```typescript
+import {
+  getFeedbacksWithPagination,
+  getFeedbackWithReplies,
+  createReply,
+  getProjectByApiKey,
+} from "@sori/database";
+
+// 페이지네이션 조회
+const { data, pagination } = await getFeedbacksWithPagination({
+  projectId: "...",
+  page: 1,
+  limit: 20,
+  status: "OPEN",
+});
+
+// 상세 + 답변 조회
+const feedback = await getFeedbackWithReplies(feedbackId);
 ```
 
 ---
@@ -185,11 +199,28 @@ model Feedback {
 ```typescript
 // apps/web/src/lib/auth.ts
 import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
+import { Pool } from "pg";
+import { Resend } from "resend";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
-  database: prismaAdapter(prisma, { provider: "postgresql" }),
-  emailAndPassword: { enabled: true },
+  database: pool,
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      await resend.emails.send({ ... });
+    },
+  },
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url }) => {
+      await resend.emails.send({ ... });
+    },
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+  },
   socialProviders: {
     google: { ... },
     github: { ... },
@@ -198,9 +229,23 @@ export const auth = betterAuth({
 ```
 
 ### 인증 흐름
-1. 회원가입 → `/signup` → Better Auth 처리 → `/onboarding`
-2. 로그인 → `/login` → Better Auth 처리 → `/admin`
-3. 조직 없으면 → `/onboarding`으로 리다이렉트
+1. 회원가입 → `/signup` → 인증 메일 발송 → `/verify-email`
+2. 메일 인증 링크 클릭 → 자동 로그인 → `/onboarding`
+3. 로그인 → `/login` → Better Auth 처리 → `/admin`
+4. 조직 없으면 → `/onboarding`으로 리다이렉트
+
+### 이메일 인증 (Resend)
+
+```bash
+# 환경 변수
+RESEND_API_KEY=re_xxxxx
+EMAIL_FROM=Sori <noreply@sori.life>
+```
+
+**Resend 설정 방법:**
+1. https://resend.com 가입
+2. API Keys → Create API Key
+3. 도메인 인증: Settings → Domains → DNS 레코드 설정
 
 ### 서버 함수에서 세션 확인
 ```typescript
@@ -216,38 +261,44 @@ if (!session) {
 
 ## 6. API 엔드포인트
 
-### Public API
+### Widget API (공개)
 
-#### GET cdn.sori.life/widget.js
+#### GET /api/v1/widget
 위젯 JavaScript 반환
 
-- URL: `https://cdn.sori.life/widget.js`
-- Content-Type: `application/javascript`
-- Cache: 1시간
-- CORS: 모든 origin 허용
-
-#### POST app.sori.life/api/v1/feedback
-피드백 생성
-
-- URL: `https://app.sori.life/api/v1/feedback`
+#### POST /api/v1/feedback
+피드백 생성 (위젯에서 호출)
 
 ```typescript
 // Request
 {
-  projectId: string;    // 필수
-  type: "BUG" | "INQUIRY" | "FEATURE";  // 필수
-  message: string;      // 필수
+  projectId: string;
+  type: "BUG" | "INQUIRY" | "FEATURE";
+  message: string;
   email?: string;
   metadata?: object;
 }
-
-// Response
-{ success: true, id: string }
 ```
 
-- CORS: Project의 `allowedOrigins` 확인
-- 인증: 없음 (공개 API)
-- Rate Limit: 분당 10회 (IP 기준)
+### Public API (API 키 인증)
+
+프로젝트별 API 키로 인증하는 REST API. 자세한 내용은 [04-public-api.md](./04-public-api.md) 참조.
+
+```bash
+# 인증 헤더
+Authorization: Bearer sk_live_xxxxx
+```
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/feedbacks` | 피드백 목록 (페이지네이션) |
+| GET | `/api/v1/feedbacks/:id` | 피드백 상세 + replies |
+| PATCH | `/api/v1/feedbacks/:id` | 상태/우선순위 변경 |
+| POST | `/api/v1/feedbacks/:id/replies` | 답변 생성 |
+| PUT | `/api/v1/feedbacks/:id/replies/:replyId` | 답변 수정 |
+| DELETE | `/api/v1/feedbacks/:id/replies/:replyId` | 답변 삭제 |
+
+**Rate Limit**: 100 req/min per API key
 
 ### Internal API (어드민용)
 
@@ -255,7 +306,8 @@ TanStack Server Functions 사용:
 - `getFeedbacks({ organizationId })`
 - `updateFeedbackStatus({ id, status })`
 - `createProject({ name, organizationId, allowedOrigins })`
-- `getUserOrganizations({ userId })`
+- `generateApiKey({ projectId })`
+- `createReply({ feedbackId, content, isInternal })`
 
 ---
 
@@ -556,6 +608,49 @@ function escapeHtml(str: string): string {
 
 ## 12. 배포
 
+### Vercel 배포
+
+#### 1. Vercel 프로젝트 설정
+
+| 설정 | 값 |
+|------|-----|
+| Framework Preset | Other |
+| Root Directory | `apps/web` |
+| Build Command | `pnpm build` |
+| Output Directory | `.output` |
+| Install Command | `pnpm install` |
+
+#### 2. 환경 변수
+
+```bash
+DATABASE_URL=postgresql://...
+BETTER_AUTH_SECRET=your-secret-key-min-32-chars
+BETTER_AUTH_URL=https://app.sori.life
+
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+
+RESEND_API_KEY=re_xxxxx
+EMAIL_FROM=Sori <noreply@sori.life>
+```
+
+#### 3. 모노레포 의존성 주의사항
+
+Vercel에서 모노레포 빌드 시 각 앱의 `package.json`에 명시된 의존성만 설치됨.
+로컬에서는 호이스팅으로 동작하지만 Vercel에서는 실패할 수 있음.
+
+```json
+// apps/web/package.json
+{
+  "dependencies": {
+    "zod": "^3.x",    // 직접 import하면 여기에도 추가 필요
+    "pg": "^8.x"
+  }
+}
+```
+
 ### 빌드 산출물
 
 ```bash
@@ -567,44 +662,51 @@ pnpm build
 - `packages/react/dist/` - React 래퍼
 
 ### 환경별 설정
-- `apiUrl`: 프로덕션에서는 실제 도메인으로 변경
+- `BETTER_AUTH_URL`: 프로덕션 URL로 변경
 - `DATABASE_URL`: 프로덕션 DB 연결 문자열
-- `BETTER_AUTH_URL`: 프로덕션 URL
 
 ---
 
 ## 13. 알려진 이슈 및 해결책
 
-### pnpm + Prisma 경로 문제
-**문제**: pnpm의 격리된 store 구조로 인해 `@prisma/client`가 생성된 클라이언트를 찾지 못함
-
-**해결**: `@sori/database` 패키지로 분리, tsup으로 번들링
-
 ### Vite SSR 번들링 문제
-**문제**: Prisma 클라이언트가 CommonJS로 생성되어 ESM 번들링 시 오류
+**문제**: pg, resend 등 Node.js 전용 모듈이 클라이언트 빌드에 포함되려 함
 
-**해결**: `vite.config.ts`에서 external 처리
+**해결**: `vite.config.ts`에서 SSR external 처리
 ```typescript
 ssr: {
-  external: ['@sori/database', 'pg', '@prisma/adapter-pg', 'better-auth'],
+  external: ['@sori/database', 'pg', 'better-auth', 'resend'],
 }
 ```
 
-### Better Auth 스키마 불일치
-**문제**: Better Auth가 보내는 필드명과 Prisma 스키마 불일치
+### Vercel 모노레포 의존성 문제
+**문제**: 로컬에서는 호이스팅으로 동작하지만 Vercel에서 빌드 실패
 
-**해결**: Account 모델의 필드명을 Better Auth 규격에 맞춤
-- `provider` → `providerId`
-- `providerAccountId` → `accountId`
+**해결**: 직접 import하는 패키지는 해당 앱의 package.json에 명시
+```bash
+pnpm --filter @sori/web add zod pg
+```
+
+### Prisma → pg 마이그레이션
+**배경**: Prisma의 ESM 호환성 문제로 pg 직접 사용으로 전환
+
+**변경사항**:
+- Zod 스키마로 타입 정의
+- SQL 쿼리 함수 직접 작성
+- 더 가벼운 번들 사이즈
 
 ---
 
 ## 14. 향후 개발 계획
 
-- [ ] OAuth 로그인 (Google, GitHub)
 - [x] 웹훅 연동 (Slack, Discord, Telegram)
 - [x] 다중 웹훅 지원 (플랜별 제한)
+- [x] Public API (피드백 조회/답변)
+- [x] 이메일 인증 (Resend)
+- [x] Vercel 배포
+- [ ] OAuth 로그인 (Google, GitHub)
 - [ ] 위젯 커스터마이징 UI
 - [ ] 팀 멤버 초대 기능
 - [ ] 요금제 관리
 - [ ] 분석 대시보드
+- [ ] 피드백 이메일 알림
