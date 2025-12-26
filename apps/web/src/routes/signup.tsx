@@ -36,7 +36,7 @@ function SignupPage() {
       if (result.error) {
         setError(result.error.message || "회원가입에 실패했습니다");
       } else {
-        navigate({ to: "/onboarding" });
+        navigate({ to: "/verify-email", search: { email } });
       }
     } catch {
       setError("회원가입 중 오류가 발생했습니다");
