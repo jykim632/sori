@@ -1,1 +1,1 @@
-export { prisma } from "@sori/database";
+export { pool } from "@sori/database";

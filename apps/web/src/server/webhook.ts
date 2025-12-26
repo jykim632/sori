@@ -1,30 +1,28 @@
 import { createServerFn } from "@tanstack/react-start";
-import { prisma } from "@sori/database";
+import {
+  getWebhooks as getWebhooksQuery,
+  createWebhook as createWebhookQuery,
+  updateWebhook as updateWebhookQuery,
+  deleteWebhook as deleteWebhookQuery,
+  getWebhookWithOrganization,
+  getWebhookCount,
+  type Plan,
+} from "@sori/database";
+import { getOrganizationWithProjects } from "./organization";
 
 // Plan limits for webhooks
-const WEBHOOK_LIMITS: Record<string, number> = {
+const WEBHOOK_LIMITS: Record<Plan, number> = {
   FREE: 1,
   PRO: 5,
   TEAM: 10,
   ENTERPRISE: 50,
 };
 
-// Auto-detect webhook type from URL
-function detectWebhookType(url: string): "SLACK" | "DISCORD" | "TELEGRAM" | "CUSTOM" {
-  if (url.includes("hooks.slack.com")) return "SLACK";
-  if (url.includes("discord.com/api/webhooks")) return "DISCORD";
-  if (url.includes("api.telegram.org")) return "TELEGRAM";
-  return "CUSTOM";
-}
-
 // Get all webhooks for an organization
 export const getWebhooks = createServerFn({ method: "GET" })
   .inputValidator((d: { organizationId: string }) => d)
   .handler(async ({ data }) => {
-    return await prisma.webhook.findMany({
-      where: { organizationId: data.organizationId },
-      orderBy: { createdAt: "asc" },
-    });
+    return await getWebhooksQuery(data.organizationId);
   });
 
 // Create a new webhook
@@ -41,30 +39,20 @@ export const createWebhook = createServerFn({ method: "POST" })
     }
 
     // Check plan limits
-    const org = await prisma.organization.findUnique({
-      where: { id: organizationId },
-      include: { webhooks: true },
-    });
+    const org = await getOrganizationWithProjects({ data: { organizationId } });
 
     if (!org) {
       throw new Error("조직을 찾을 수 없습니다");
     }
 
-    const limit = WEBHOOK_LIMITS[org.plan] || 1;
-    if (org.webhooks.length >= limit) {
+    const webhookCount = await getWebhookCount(organizationId);
+    const limit = WEBHOOK_LIMITS[org.plan as Plan] || 1;
+
+    if (webhookCount >= limit) {
       throw new Error(`${org.plan} 플랜은 최대 ${limit}개의 웹훅만 등록할 수 있습니다`);
     }
 
-    const type = detectWebhookType(url);
-
-    return await prisma.webhook.create({
-      data: {
-        name,
-        url,
-        type,
-        organizationId,
-      },
-    });
+    return await createWebhookQuery({ name, url, organizationId });
   });
 
 // Update a webhook
@@ -82,27 +70,15 @@ export const updateWebhook = createServerFn({ method: "POST" })
       }
     }
 
-    const updateData: { name?: string; url?: string; type?: "SLACK" | "DISCORD" | "TELEGRAM" | "CUSTOM"; enabled?: boolean } = {};
-    if (name !== undefined) updateData.name = name;
-    if (url !== undefined) {
-      updateData.url = url;
-      updateData.type = detectWebhookType(url);
-    }
-    if (enabled !== undefined) updateData.enabled = enabled;
-
-    return await prisma.webhook.update({
-      where: { id },
-      data: updateData,
-    });
+    return await updateWebhookQuery({ id, name, url, enabled });
   });
 
 // Delete a webhook
 export const deleteWebhook = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
-    return await prisma.webhook.delete({
-      where: { id: data.id },
-    });
+    await deleteWebhookQuery(data.id);
+    return { success: true };
   });
 
 // Test a webhook (same format logic as organization.ts)
@@ -179,14 +155,7 @@ function formatWebhookPayload(
 export const testWebhookById = createServerFn({ method: "POST" })
   .inputValidator((d: { webhookId: string }) => d)
   .handler(async ({ data }) => {
-    const webhook = await prisma.webhook.findUnique({
-      where: { id: data.webhookId },
-      include: {
-        organization: {
-          include: { projects: { take: 1 } },
-        },
-      },
-    });
+    const webhook = await getWebhookWithOrganization(data.webhookId);
 
     if (!webhook) {
       return { success: false, message: "웹훅을 찾을 수 없습니다" };

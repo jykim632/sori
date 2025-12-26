@@ -1,5 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
-import { prisma } from "@sori/database";
+import {
+  createOrganization as createOrganizationQuery,
+  getUserOrganizations as getUserOrganizationsQuery,
+  getUserOrganization as getUserOrganizationQuery,
+  getOrganizationWithProjects as getOrganizationWithProjectsQuery,
+  getUserRoleInOrganization as getUserRoleInOrganizationQuery,
+  updateOrganizationWebhook as updateOrganizationWebhookQuery,
+  getOrganizationBySlug,
+} from "@sori/database";
 
 export const createOrganization = createServerFn({ method: "POST" })
   .inputValidator((d: { name: string; slug: string; userId: string }) => d)
@@ -7,42 +15,21 @@ export const createOrganization = createServerFn({ method: "POST" })
     const { name, slug, userId } = data;
 
     // Check if slug is already taken
-    const existing = await prisma.organization.findUnique({
-      where: { slug },
-    });
+    const existing = await getOrganizationBySlug(slug);
 
     if (existing) {
       throw new Error("이미 사용 중인 URL입니다");
     }
 
     // Create organization with the user as OWNER
-    const org = await prisma.organization.create({
-      data: {
-        name,
-        slug,
-        members: {
-          create: {
-            userId,
-            role: "OWNER",
-          },
-        },
-      },
-    });
-
-    return org;
+    return await createOrganizationQuery({ name, slug, userId });
   });
 
 // Get all organizations the user belongs to
 export const getUserOrganizations = createServerFn({ method: "GET" })
   .inputValidator((d: { userId: string }) => d)
   .handler(async ({ data }) => {
-    const memberships = await prisma.organizationMember.findMany({
-      where: { userId: data.userId },
-      include: {
-        organization: true,
-      },
-      orderBy: { createdAt: "asc" },
-    });
+    const memberships = await getUserOrganizationsQuery(data.userId);
 
     return memberships.map((m) => ({
       ...m.organization,
@@ -54,51 +41,20 @@ export const getUserOrganizations = createServerFn({ method: "GET" })
 export const getUserOrganization = createServerFn({ method: "GET" })
   .inputValidator((d: { userId: string }) => d)
   .handler(async ({ data }) => {
-    const membership = await prisma.organizationMember.findFirst({
-      where: { userId: data.userId },
-      include: { organization: true },
-      orderBy: { createdAt: "asc" },
-    });
-
-    return membership?.organization || null;
+    return await getUserOrganizationQuery(data.userId);
   });
 
 export const getOrganizationWithProjects = createServerFn({ method: "GET" })
   .inputValidator((d: { organizationId: string }) => d)
   .handler(async ({ data }) => {
-    return await prisma.organization.findUnique({
-      where: { id: data.organizationId },
-      include: {
-        projects: true,
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    return await getOrganizationWithProjectsQuery(data.organizationId);
   });
 
 // Get user's role in a specific organization
 export const getUserRoleInOrganization = createServerFn({ method: "GET" })
   .inputValidator((d: { userId: string; organizationId: string }) => d)
   .handler(async ({ data }) => {
-    const membership = await prisma.organizationMember.findUnique({
-      where: {
-        userId_organizationId: {
-          userId: data.userId,
-          organizationId: data.organizationId,
-        },
-      },
-    });
-
-    return membership?.role || null;
+    return await getUserRoleInOrganizationQuery(data.userId, data.organizationId);
   });
 
 // Update organization webhook URL
@@ -116,10 +72,7 @@ export const updateOrganizationWebhook = createServerFn({ method: "POST" })
       }
     }
 
-    return await prisma.organization.update({
-      where: { id: organizationId },
-      data: { webhookUrl },
-    });
+    return await updateOrganizationWebhookQuery(organizationId, webhookUrl);
   });
 
 // Get type emoji and label for webhook formatting

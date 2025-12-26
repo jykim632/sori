@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as OrganizationsRouteImport } from './routes/organizations'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -16,10 +17,19 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiV1WidgetRouteImport } from './routes/api/v1/widget'
+import { Route as ApiV1FeedbacksRouteImport } from './routes/api/v1/feedbacks'
 import { Route as ApiV1FeedbackRouteImport } from './routes/api/v1/feedback'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AdminProjectsProjectIdRouteImport } from './routes/admin/projects/$projectId'
+import { Route as ApiV1FeedbacksFeedbackIdRouteImport } from './routes/api/v1/feedbacks.$feedbackId'
+import { Route as ApiV1FeedbacksFeedbackIdRepliesRouteImport } from './routes/api/v1/feedbacks.$feedbackId.replies'
+import { Route as ApiV1FeedbacksFeedbackIdRepliesReplyIdRouteImport } from './routes/api/v1/feedbacks.$feedbackId.replies.$replyId'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -55,9 +65,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiV1WidgetRoute = ApiV1WidgetRouteImport.update({
-  id: '/api/v1/widget',
-  path: '/api/v1/widget',
+const ApiV1FeedbacksRoute = ApiV1FeedbacksRouteImport.update({
+  id: '/api/v1/feedbacks',
+  path: '/api/v1/feedbacks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1FeedbackRoute = ApiV1FeedbackRouteImport.update({
@@ -70,43 +80,81 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminProjectsProjectIdRoute = AdminProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const ApiV1FeedbacksFeedbackIdRoute =
+  ApiV1FeedbacksFeedbackIdRouteImport.update({
+    id: '/$feedbackId',
+    path: '/$feedbackId',
+    getParentRoute: () => ApiV1FeedbacksRoute,
+  } as any)
+const ApiV1FeedbacksFeedbackIdRepliesRoute =
+  ApiV1FeedbacksFeedbackIdRepliesRouteImport.update({
+    id: '/replies',
+    path: '/replies',
+    getParentRoute: () => ApiV1FeedbacksFeedbackIdRoute,
+  } as any)
+const ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute =
+  ApiV1FeedbacksFeedbackIdRepliesReplyIdRouteImport.update({
+    id: '/$replyId',
+    path: '/$replyId',
+    getParentRoute: () => ApiV1FeedbacksFeedbackIdRepliesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/guide': typeof GuideRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/organizations': typeof OrganizationsRoute
   '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/admin/projects/$projectId': typeof AdminProjectsProjectIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/feedback': typeof ApiV1FeedbackRoute
-  '/api/v1/widget': typeof ApiV1WidgetRoute
+  '/api/v1/feedbacks': typeof ApiV1FeedbacksRouteWithChildren
+  '/api/v1/feedbacks/$feedbackId': typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
+  '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
+  '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/guide': typeof GuideRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/organizations': typeof OrganizationsRoute
   '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/admin/projects/$projectId': typeof AdminProjectsProjectIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/feedback': typeof ApiV1FeedbackRoute
-  '/api/v1/widget': typeof ApiV1WidgetRoute
+  '/api/v1/feedbacks': typeof ApiV1FeedbacksRouteWithChildren
+  '/api/v1/feedbacks/$feedbackId': typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
+  '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
+  '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/guide': typeof GuideRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/organizations': typeof OrganizationsRoute
   '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/admin/projects/$projectId': typeof AdminProjectsProjectIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/feedback': typeof ApiV1FeedbackRoute
-  '/api/v1/widget': typeof ApiV1WidgetRoute
+  '/api/v1/feedbacks': typeof ApiV1FeedbacksRouteWithChildren
+  '/api/v1/feedbacks/$feedbackId': typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
+  '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
+  '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -118,9 +166,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/organizations'
     | '/signup'
+    | '/verify-email'
+    | '/admin/projects/$projectId'
     | '/api/auth/$'
     | '/api/v1/feedback'
-    | '/api/v1/widget'
+    | '/api/v1/feedbacks'
+    | '/api/v1/feedbacks/$feedbackId'
+    | '/api/v1/feedbacks/$feedbackId/replies'
+    | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -130,9 +183,14 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/organizations'
     | '/signup'
+    | '/verify-email'
+    | '/admin/projects/$projectId'
     | '/api/auth/$'
     | '/api/v1/feedback'
-    | '/api/v1/widget'
+    | '/api/v1/feedbacks'
+    | '/api/v1/feedbacks/$feedbackId'
+    | '/api/v1/feedbacks/$feedbackId/replies'
+    | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
   id:
     | '__root__'
     | '/'
@@ -142,26 +200,39 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/organizations'
     | '/signup'
+    | '/verify-email'
+    | '/admin/projects/$projectId'
     | '/api/auth/$'
     | '/api/v1/feedback'
-    | '/api/v1/widget'
+    | '/api/v1/feedbacks'
+    | '/api/v1/feedbacks/$feedbackId'
+    | '/api/v1/feedbacks/$feedbackId/replies'
+    | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   GuideRoute: typeof GuideRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   OrganizationsRoute: typeof OrganizationsRoute
   SignupRoute: typeof SignupRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1FeedbackRoute: typeof ApiV1FeedbackRoute
-  ApiV1WidgetRoute: typeof ApiV1WidgetRoute
+  ApiV1FeedbacksRoute: typeof ApiV1FeedbacksRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -211,11 +282,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/v1/widget': {
-      id: '/api/v1/widget'
-      path: '/api/v1/widget'
-      fullPath: '/api/v1/widget'
-      preLoaderRoute: typeof ApiV1WidgetRouteImport
+    '/api/v1/feedbacks': {
+      id: '/api/v1/feedbacks'
+      path: '/api/v1/feedbacks'
+      fullPath: '/api/v1/feedbacks'
+      preLoaderRoute: typeof ApiV1FeedbacksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/feedback': {
@@ -232,20 +303,101 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/projects/$projectId': {
+      id: '/admin/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/admin/projects/$projectId'
+      preLoaderRoute: typeof AdminProjectsProjectIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/api/v1/feedbacks/$feedbackId': {
+      id: '/api/v1/feedbacks/$feedbackId'
+      path: '/$feedbackId'
+      fullPath: '/api/v1/feedbacks/$feedbackId'
+      preLoaderRoute: typeof ApiV1FeedbacksFeedbackIdRouteImport
+      parentRoute: typeof ApiV1FeedbacksRoute
+    }
+    '/api/v1/feedbacks/$feedbackId/replies': {
+      id: '/api/v1/feedbacks/$feedbackId/replies'
+      path: '/replies'
+      fullPath: '/api/v1/feedbacks/$feedbackId/replies'
+      preLoaderRoute: typeof ApiV1FeedbacksFeedbackIdRepliesRouteImport
+      parentRoute: typeof ApiV1FeedbacksFeedbackIdRoute
+    }
+    '/api/v1/feedbacks/$feedbackId/replies/$replyId': {
+      id: '/api/v1/feedbacks/$feedbackId/replies/$replyId'
+      path: '/$replyId'
+      fullPath: '/api/v1/feedbacks/$feedbackId/replies/$replyId'
+      preLoaderRoute: typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRouteImport
+      parentRoute: typeof ApiV1FeedbacksFeedbackIdRepliesRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminProjectsProjectIdRoute: typeof AdminProjectsProjectIdRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminProjectsProjectIdRoute: AdminProjectsProjectIdRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface ApiV1FeedbacksFeedbackIdRepliesRouteChildren {
+  ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute: typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
+}
+
+const ApiV1FeedbacksFeedbackIdRepliesRouteChildren: ApiV1FeedbacksFeedbackIdRepliesRouteChildren =
+  {
+    ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute:
+      ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute,
+  }
+
+const ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren =
+  ApiV1FeedbacksFeedbackIdRepliesRoute._addFileChildren(
+    ApiV1FeedbacksFeedbackIdRepliesRouteChildren,
+  )
+
+interface ApiV1FeedbacksFeedbackIdRouteChildren {
+  ApiV1FeedbacksFeedbackIdRepliesRoute: typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
+}
+
+const ApiV1FeedbacksFeedbackIdRouteChildren: ApiV1FeedbacksFeedbackIdRouteChildren =
+  {
+    ApiV1FeedbacksFeedbackIdRepliesRoute:
+      ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren,
+  }
+
+const ApiV1FeedbacksFeedbackIdRouteWithChildren =
+  ApiV1FeedbacksFeedbackIdRoute._addFileChildren(
+    ApiV1FeedbacksFeedbackIdRouteChildren,
+  )
+
+interface ApiV1FeedbacksRouteChildren {
+  ApiV1FeedbacksFeedbackIdRoute: typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
+}
+
+const ApiV1FeedbacksRouteChildren: ApiV1FeedbacksRouteChildren = {
+  ApiV1FeedbacksFeedbackIdRoute: ApiV1FeedbacksFeedbackIdRouteWithChildren,
+}
+
+const ApiV1FeedbacksRouteWithChildren = ApiV1FeedbacksRoute._addFileChildren(
+  ApiV1FeedbacksRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   GuideRoute: GuideRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   OrganizationsRoute: OrganizationsRoute,
   SignupRoute: SignupRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1FeedbackRoute: ApiV1FeedbackRoute,
-  ApiV1WidgetRoute: ApiV1WidgetRoute,
+  ApiV1FeedbacksRoute: ApiV1FeedbacksRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

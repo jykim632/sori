@@ -18,7 +18,12 @@ const config = defineConfig({
     viteReact(),
   ],
   ssr: {
-    external: ['@sori/database', 'pg', '@prisma/adapter-pg', 'better-auth'],
+    external: [
+      '@sori/database',
+      'pg',
+      'better-auth',
+    ],
+    noExternal: [],
   },
 })
 

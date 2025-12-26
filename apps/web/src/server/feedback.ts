@@ -1,16 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
-import { prisma, type FeedbackType, type FeedbackStatus, type Prisma } from "@sori/database";
+import {
+  getFeedbacks as getFeedbacksQuery,
+  createFeedback as createFeedbackQuery,
+  updateFeedbackStatus as updateFeedbackStatusQuery,
+  type FeedbackType,
+  type FeedbackStatus,
+} from "@sori/database";
 
 export const getFeedbacks = createServerFn({ method: "GET" })
   .inputValidator((d: { projectId?: string; organizationId?: string }) => d)
   .handler(async ({ data }) => {
-    return await prisma.feedback.findMany({
-      where: {
-        ...(data?.projectId && { projectId: data.projectId }),
-        ...(data?.organizationId && { project: { organizationId: data.organizationId } }),
-      },
-      orderBy: { createdAt: "desc" },
-      include: { project: true },
+    return await getFeedbacksQuery({
+      projectId: data?.projectId,
+      organizationId: data?.organizationId,
     });
   });
 
@@ -31,32 +33,20 @@ export const createFeedback = createServerFn({ method: "POST" })
       throw new Error("Missing required fields");
     }
 
-    return await prisma.feedback.create({
-      data: {
-        message,
-        type,
-        email: email || null,
-        projectId,
-        metadata: metadata as Prisma.InputJsonValue | undefined,
-      },
+    return await createFeedbackQuery({
+      message,
+      type,
+      email: email || null,
+      projectId,
+      metadata: metadata || null,
     });
   });
 
 export const updateFeedbackStatus = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; status: FeedbackStatus }) => d)
   .handler(async ({ data }) => {
-    const updateData: { status: FeedbackStatus; resolvedAt?: Date | null } = {
+    return await updateFeedbackStatusQuery({
+      id: data.id,
       status: data.status,
-    };
-
-    if (data.status === "RESOLVED" || data.status === "CLOSED") {
-      updateData.resolvedAt = new Date();
-    } else {
-      updateData.resolvedAt = null;
-    }
-
-    return await prisma.feedback.update({
-      where: { id: data.id },
-      data: updateData,
     });
   });
