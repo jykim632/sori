@@ -22,8 +22,18 @@ const config = defineConfig({
       '@sori/database',
       'pg',
       'better-auth',
+      'resend',
     ],
     noExternal: [],
+  },
+  build: {
+    rollupOptions: {
+      external: [
+        'pg',
+        'pg-native',
+        'resend',
+      ],
+    },
   },
 })
 
