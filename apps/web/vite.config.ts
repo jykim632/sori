@@ -26,15 +26,6 @@ const config = defineConfig({
     ],
     noExternal: [],
   },
-  build: {
-    rollupOptions: {
-      external: [
-        'pg',
-        'pg-native',
-        'resend',
-      ],
-    },
-  },
 })
 
 export default config
