@@ -1,8 +1,9 @@
-import type { SoriConfig, SoriInstance, FeedbackType } from "./types";
+import type { SoriConfig, SoriInstance, FeedbackType, WidgetConfig, ThemeStyles } from "./types";
 import { getStyles } from "./styles";
 import { i18n, type Locale } from "./i18n";
 import { submitFeedback } from "./api";
 import { icons } from "./icons";
+import { resolveTheme, THEME_PRESETS } from "./themes";
 
 const DEFAULT_CONFIG: Required<Omit<SoriConfig, "projectId">> = {
   apiUrl: "https://api.sori.io",
@@ -14,12 +15,41 @@ const DEFAULT_CONFIG: Required<Omit<SoriConfig, "projectId">> = {
   zIndex: 9999,
 };
 
-export function createWidget(userConfig: SoriConfig): SoriInstance {
+export interface CreateWidgetOptions extends SoriConfig {
+  /** Widget configuration from server (overrides individual options) */
+  widgetConfig?: WidgetConfig;
+}
+
+export function createWidget(userConfig: CreateWidgetOptions): SoriInstance {
+  // Merge widget config if provided
+  const widgetConfig = userConfig.widgetConfig;
+
   const config: Required<SoriConfig> = {
     ...DEFAULT_CONFIG,
     ...userConfig,
-    greeting: userConfig.greeting || i18n[userConfig.locale || "ko"].greeting,
+    // Apply widgetConfig values if present
+    position: widgetConfig?.position || userConfig.position || DEFAULT_CONFIG.position,
+    greeting: widgetConfig?.greeting || userConfig.greeting || i18n[userConfig.locale || "ko"].greeting,
+    types: widgetConfig?.types || userConfig.types || DEFAULT_CONFIG.types,
+    locale: widgetConfig?.locale || userConfig.locale || DEFAULT_CONFIG.locale,
+    zIndex: widgetConfig?.zIndex || userConfig.zIndex || DEFAULT_CONFIG.zIndex,
   };
+
+  // Resolve theme: widgetConfig > individual primaryColor > default
+  let theme: ThemeStyles;
+  if (widgetConfig) {
+    theme = resolveTheme(widgetConfig);
+    // Override primaryColor if explicitly set in userConfig
+    if (userConfig.primaryColor && !widgetConfig.styles?.primaryColor) {
+      theme = { ...theme, primaryColor: userConfig.primaryColor };
+    }
+  } else {
+    // Legacy mode: use primaryColor directly
+    theme = {
+      ...THEME_PRESETS.default,
+      primaryColor: config.primaryColor,
+    };
+  }
 
   const t = i18n[config.locale as Locale];
   let isOpen = false;
@@ -34,7 +64,7 @@ export function createWidget(userConfig: SoriConfig): SoriInstance {
 
   // Inject styles
   const style = document.createElement("style");
-  style.textContent = getStyles(config.primaryColor, config.position, config.zIndex);
+  style.textContent = getStyles(theme, config.position, config.zIndex);
   shadow.appendChild(style);
 
   // Create container

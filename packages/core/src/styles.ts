@@ -1,6 +1,39 @@
-import type { Position } from "./types";
+import type { Position, ThemeStyles } from "./types";
+import { resolveSizeValue, resolveBorderRadius, resolveShadow } from "./themes";
 
-export function getStyles(primaryColor: string, position: Position, zIndex: number): string {
+/**
+ * Generate CSS styles for the widget based on theme
+ */
+export function getStyles(
+  theme: ThemeStyles,
+  position: Position,
+  zIndex: number
+): string {
+  const {
+    primaryColor,
+    backgroundColor,
+    textColor,
+    textSecondaryColor,
+    borderColor,
+    fontFamily,
+    fontSize,
+    triggerSize,
+    panelWidth,
+    borderRadius,
+    shadow,
+  } = theme;
+
+  // Resolve tokens to CSS values
+  const fontSizeValue = resolveSizeValue("fontSize", fontSize);
+  const triggerSizeValue = resolveSizeValue("triggerSize", triggerSize);
+  const panelWidthValue = resolveSizeValue("panelWidth", panelWidth);
+  const borderRadiusValue = resolveBorderRadius(borderRadius);
+  const shadowValue = resolveShadow(shadow);
+
+  // Trigger button uses circular shape for 'full' borderRadius
+  const triggerBorderRadius = borderRadius === "full" ? "50%" : borderRadiusValue;
+
+  // Position styles
   const positions: Record<Position, string> = {
     "bottom-right": "bottom: 20px; right: 20px;",
     "bottom-left": "bottom: 20px; left: 20px;",
@@ -19,27 +52,28 @@ export function getStyles(primaryColor: string, position: Position, zIndex: numb
       position: fixed;
       ${positions[position]}
       z-index: ${zIndex};
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-size: 14px;
+      font-family: ${fontFamily};
+      font-size: ${fontSizeValue};
+      color: ${textColor};
     }
 
     .sori-trigger {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
+      width: ${triggerSizeValue};
+      height: ${triggerSizeValue};
+      border-radius: ${triggerBorderRadius};
       background: ${primaryColor};
       border: none;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: ${shadowValue};
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
     .sori-trigger:hover {
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+      box-shadow: ${resolveShadow(shadow === "none" ? "sm" : shadow === "sm" ? "md" : "lg")};
     }
 
     .sori-trigger svg {
@@ -50,12 +84,12 @@ export function getStyles(primaryColor: string, position: Position, zIndex: numb
 
     .sori-panel {
       position: absolute;
-      ${position.includes("bottom") ? "bottom: 70px;" : "top: 70px;"}
+      ${position.includes("bottom") ? "bottom: calc(" + triggerSizeValue + " + 14px);" : "top: calc(" + triggerSizeValue + " + 14px);"}
       ${position.includes("right") ? "right: 0;" : "left: 0;"}
-      width: 320px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      width: ${panelWidthValue};
+      background: ${backgroundColor};
+      border-radius: ${borderRadiusValue};
+      box-shadow: ${shadowValue};
       opacity: 0;
       visibility: hidden;
       transform: translateY(${position.includes("bottom") ? "10px" : "-10px"});
@@ -70,12 +104,12 @@ export function getStyles(primaryColor: string, position: Position, zIndex: numb
 
     .sori-header {
       padding: 16px;
-      border-bottom: 1px solid #e5e7eb;
+      border-bottom: 1px solid ${borderColor};
     }
 
     .sori-greeting {
       font-weight: 600;
-      color: #111827;
+      color: ${textColor};
     }
 
     .sori-body {
@@ -91,16 +125,18 @@ export function getStyles(primaryColor: string, position: Position, zIndex: numb
     .sori-type-btn {
       flex: 1;
       padding: 8px 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      background: white;
+      border: 1px solid ${borderColor};
+      border-radius: ${resolveBorderRadius(borderRadius === "full" ? "lg" : borderRadius)};
+      background: ${backgroundColor};
+      color: ${textSecondaryColor};
       cursor: pointer;
-      font-size: 12px;
+      font-size: ${resolveSizeValue("fontSize", fontSize === "lg" ? "md" : "sm")};
       transition: all 0.15s;
     }
 
     .sori-type-btn:hover {
       border-color: ${primaryColor};
+      color: ${primaryColor};
     }
 
     .sori-type-btn.active {
@@ -113,12 +149,18 @@ export function getStyles(primaryColor: string, position: Position, zIndex: numb
       width: 100%;
       min-height: 100px;
       padding: 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
+      border: 1px solid ${borderColor};
+      border-radius: ${resolveBorderRadius(borderRadius === "full" ? "md" : borderRadius)};
+      background: ${backgroundColor};
+      color: ${textColor};
       resize: vertical;
       font-family: inherit;
-      font-size: 14px;
+      font-size: ${fontSizeValue};
       margin-bottom: 12px;
+    }
+
+    .sori-textarea::placeholder {
+      color: ${textSecondaryColor};
     }
 
     .sori-textarea:focus {
@@ -129,11 +171,17 @@ export function getStyles(primaryColor: string, position: Position, zIndex: numb
     .sori-input {
       width: 100%;
       padding: 10px 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
+      border: 1px solid ${borderColor};
+      border-radius: ${resolveBorderRadius(borderRadius === "full" ? "md" : borderRadius)};
+      background: ${backgroundColor};
+      color: ${textColor};
       font-family: inherit;
-      font-size: 14px;
+      font-size: ${fontSizeValue};
       margin-bottom: 12px;
+    }
+
+    .sori-input::placeholder {
+      color: ${textSecondaryColor};
     }
 
     .sori-input:focus {
@@ -147,8 +195,9 @@ export function getStyles(primaryColor: string, position: Position, zIndex: numb
       background: ${primaryColor};
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: ${resolveBorderRadius(borderRadius === "full" ? "lg" : borderRadius)};
       font-weight: 500;
+      font-size: ${fontSizeValue};
       cursor: pointer;
       transition: opacity 0.15s;
     }
@@ -174,4 +223,29 @@ export function getStyles(primaryColor: string, position: Position, zIndex: numb
       margin-bottom: 12px;
     }
   `;
+}
+
+/**
+ * Legacy function for backward compatibility
+ * @deprecated Use getStyles(theme, position, zIndex) instead
+ */
+export function getStylesLegacy(
+  primaryColor: string,
+  position: Position,
+  zIndex: number
+): string {
+  const legacyTheme: ThemeStyles = {
+    primaryColor,
+    backgroundColor: "#FFFFFF",
+    textColor: "#111827",
+    textSecondaryColor: "#6B7280",
+    borderColor: "#E5E7EB",
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: "md",
+    triggerSize: "md",
+    panelWidth: "md",
+    borderRadius: "md",
+    shadow: "md",
+  };
+  return getStyles(legacyTheme, position, zIndex);
 }

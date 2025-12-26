@@ -1,0 +1,20 @@
+{
+  "name": "@sori/cdn",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx tsx watch src/dev.ts",
+    "build": "tsc",
+    "start": "node dist/dev.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@sori/tsconfig": "workspace:*",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.2"
+  }
+}
