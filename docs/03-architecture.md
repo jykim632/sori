@@ -10,24 +10,26 @@
 │  │                                         피드백 UI   │ │
 │  └─────────────────────────────────────────────────────┘ │
 │                    ▲                                     │
-│                    │ @sori/core (3.2KB gzipped)          │
+│                    │ <script src="cdn.sori.life/widget.js">
 └────────────────────┼────────────────────────────────────┘
                      │
-                     ▼ HTTPS (POST /api/feedback)
-┌─────────────────────────────────────────────────────────┐
-│  Sori Backend                                            │
-│  ├── TanStack Start (Server Functions)                   │
-│  ├── Prisma ORM                                          │
-│  └── Supabase (PostgreSQL)                               │
-└─────────────────────────────────────────────────────────┘
-                     │
-                     ▼ Webhook (optional)
-┌─────────────────────────────────────────────────────────┐
-│  Integrations                                            │
-│  ├── Slack                                               │
-│  ├── Discord                                             │
-│  └── 카카오 알림톡                                        │
-└─────────────────────────────────────────────────────────┘
+        ┌────────────┴────────────┐
+        ▼                         ▼
+┌───────────────────┐    ┌───────────────────────────────┐
+│ cdn.sori.life     │    │ app.sori.life (TanStack Start) │
+│ (S3 + CloudFront) │    │ ├── POST /api/v1/feedback     │
+│ └── /widget.js    │    │ └── 어드민 대시보드             │
+└───────────────────┘    └───────────────────────────────┘
+                                      │
+                                      ▼ Prisma
+                         ┌─────────────────────────────────┐
+                         │  Supabase (PostgreSQL)          │
+                         └─────────────────────────────────┘
+                                      │
+                                      ▼ Webhook (optional)
+                         ┌─────────────────────────────────┐
+                         │  Slack, Discord, Telegram       │
+                         └─────────────────────────────────┘
 ```
 
 ## 모노레포 구조
@@ -37,50 +39,44 @@ sori/
 ├── package.json              # 루트 (turbo, pnpm)
 ├── pnpm-workspace.yaml       # 워크스페이스 정의
 ├── turbo.json                # Turborepo 설정
-├── .gitignore
-│
-├── packages/                 # 라이브러리 패키지
-│   ├── core/                 # Vanilla JS 위젯
-│   │   ├── package.json      # @sori/core
-│   │   ├── tsup.config.ts    # 번들러 설정
-│   │   ├── tsconfig.json
-│   │   └── src/
-│   │       ├── index.ts      # npm 엔트리
-│   │       ├── cdn.ts        # CDN 엔트리 (auto-init)
-│   │       ├── widget.ts     # 위젯 로직
-│   │       ├── styles.ts     # CSS-in-JS
-│   │       ├── api.ts        # API 통신
-│   │       ├── i18n.ts       # 다국어
-│   │       ├── icons.ts      # SVG 아이콘
-│   │       └── types.ts      # 타입 정의
-│   │
-│   └── react/                # React wrapper
-│       ├── package.json      # @sori/react
-│       ├── tsup.config.ts
-│       ├── tsconfig.json
-│       └── src/
-│           ├── index.ts
-│           ├── SoriWidget.tsx
-│           └── useSori.ts
 │
 ├── apps/                     # 애플리케이션
-│   └── web/                  # Admin 대시보드
+│   ├── cdn/                  # 위젯 CDN (cdn.sori.life → S3 + CloudFront)
+│   │   ├── package.json      # @sori/cdn
+│   │   └── src/
+│   │       ├── app.ts        # Hono 앱
+│   │       └── widget.ts     # GET /widget.js (정적 빌드용)
+│   │
+│   └── web/                  # 어드민 대시보드 + API (app.sori.life)
 │       ├── package.json      # @sori/web
 │       ├── vite.config.ts
-│       ├── prisma/
-│       │   └── schema.prisma
 │       └── src/
 │           ├── routes/
+│           │   └── api/v1/feedback.ts  # 피드백 API
 │           ├── server/
 │           ├── components/
 │           └── lib/
 │
-└── tooling/                  # 공유 설정
-    └── tsconfig/
-        ├── package.json      # @sori/tsconfig
-        ├── base.json
-        ├── react.json
-        └── node.json
+├── packages/                 # 라이브러리 패키지
+│   ├── core/                 # Vanilla JS 위젯
+│   │   └── src/
+│   │       ├── widget.ts     # 위젯 로직
+│   │       ├── styles.ts     # CSS-in-JS
+│   │       └── api.ts        # API 통신
+│   │
+│   ├── react/                # React wrapper
+│   │   └── src/
+│   │       ├── SoriWidget.tsx
+│   │       └── useSori.ts
+│   │
+│   └── database/             # Prisma ORM
+│       ├── prisma/
+│       │   └── schema.prisma
+│       └── src/
+│           └── client.ts
+│
+└── tooling/
+    └── tsconfig/             # 공유 TypeScript 설정
 ```
 
 ## 기술 스택

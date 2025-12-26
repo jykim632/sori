@@ -39,12 +39,17 @@
 ```
 sori/
 ├── apps/
-│   └── web/                    # 어드민 대시보드 앱
+│   ├── cdn/                    # 위젯 CDN (cdn.sori.life → S3 + CloudFront)
+│   │   └── src/
+│   │       ├── app.ts          # Hono 앱
+│   │       ├── dev.ts          # 로컬 개발 서버
+│   │       └── widget.ts       # GET /widget.js
+│   │
+│   └── web/                    # 어드민 + API (app.sori.life)
 │       ├── src/
 │       │   ├── routes/         # 페이지 라우트 (파일 기반)
-│       │   │   ├── api/        # API 엔드포인트
-│       │   │   │   ├── auth/   # better-auth 핸들러
-│       │   │   │   └── v1/     # Public API
+│       │   │   ├── api/auth/   # better-auth 핸들러
+│       │   │   ├── api/v1/feedback.ts  # 피드백 API
 │       │   │   ├── admin.tsx   # 어드민 대시보드
 │       │   │   ├── login.tsx   # 로그인
 │       │   │   ├── signup.tsx  # 회원가입
@@ -57,9 +62,6 @@ sori/
 │       │   │   ├── projects.ts # 프로젝트 관리
 │       │   │   └── webhook.ts  # 웹훅 CRUD
 │       │   ├── lib/            # 유틸리티
-│       │   │   ├── auth.ts     # better-auth 설정
-│       │   │   ├── auth-client.ts  # 클라이언트 auth
-│       │   │   └── db.ts       # DB 클라이언트 re-export
 │       │   └── components/     # React 컴포넌트
 │       └── vite.config.ts
 │
@@ -214,10 +216,20 @@ if (!session) {
 
 ## 6. API 엔드포인트
 
-### Public API (위젯용)
+### Public API
 
-#### POST /api/v1/feedback
+#### GET cdn.sori.life/widget.js
+위젯 JavaScript 반환
+
+- URL: `https://cdn.sori.life/widget.js`
+- Content-Type: `application/javascript`
+- Cache: 1시간
+- CORS: 모든 origin 허용
+
+#### POST app.sori.life/api/v1/feedback
 피드백 생성
+
+- URL: `https://app.sori.life/api/v1/feedback`
 
 ```typescript
 // Request
@@ -235,12 +247,7 @@ if (!session) {
 
 - CORS: Project의 `allowedOrigins` 확인
 - 인증: 없음 (공개 API)
-
-#### GET /api/v1/widget
-위젯 JavaScript 반환
-
-- Content-Type: `application/javascript`
-- Cache: 1시간
+- Rate Limit: 분당 10회 (IP 기준)
 
 ### Internal API (어드민용)
 
@@ -256,35 +263,38 @@ TanStack Server Functions 사용:
 
 ### 임베드 코드
 
-**간단한 사용법 (한 줄)**
+**한 줄로 설치:**
 ```html
-<script src="https://sori.io/api/v1/widget" data-project-id="PROJECT_ID"></script>
+<script src="https://cdn.sori.life/widget.js" data-project-id="PROJECT_ID"></script>
 ```
 
-**커스터마이징**
+**커스터마이징:**
 ```html
 <script
-  src="https://sori.io/api/v1/widget"
+  src="https://cdn.sori.life/widget.js"
   data-project-id="PROJECT_ID"
-  data-position="bottom-right"
-  data-color="#4f46e5"
-  data-text="Feedback"
+  data-position="bottom-left"
+  data-color="#10b981"
+  data-text="피드백"
 ></script>
 ```
 
 **지원하는 data 속성:**
-- `data-project-id` (필수): 프로젝트 ID
-- `data-position`: 위치 (bottom-right, bottom-left, top-right, top-left)
-- `data-color`: 테마 색상 (HEX)
-- `data-text`: 버튼 텍스트
-- `data-api-url`: API URL (자동 감지됨)
+
+| 속성 | 필수 | 기본값 | 설명 |
+|------|------|--------|------|
+| `data-project-id` | O | - | 프로젝트 ID |
+| `data-position` | X | `bottom-right` | 위치 (bottom-right, bottom-left, top-right, top-left) |
+| `data-color` | X | `#4f46e5` | 테마 색상 (HEX) |
+| `data-text` | X | `Feedback` | 버튼 텍스트 |
+| `data-api-url` | X | `https://app.sori.life` | API URL (자동 감지) |
 
 ### 위젯 동작
-1. 스크립트 로드 시 `window.SoriWidgetConfig` 읽기
+1. 스크립트 로드 시 data 속성 또는 `window.SoriWidgetConfig` 읽기
 2. CSS 인라인 주입
 3. 플로팅 버튼 렌더링
 4. 클릭 시 피드백 폼 표시
-5. 제출 시 `/api/v1/feedback`로 POST
+5. 제출 시 `app.sori.life/api/v1/feedback`로 POST
 
 ### 위젯 API
 ```javascript
@@ -344,7 +354,8 @@ pnpm dev                  # 모든 패키지 watch 모드
 pnpm build                # 전체 빌드
 
 # 개별 패키지
-pnpm --filter @sori/web dev
+pnpm --filter @sori/web dev      # 어드민 대시보드 (localhost:3000)
+pnpm --filter @sori/cdn dev      # CDN 서버 (localhost:3001)
 pnpm --filter @sori/core build
 pnpm --filter @sori/database db:studio
 
@@ -355,6 +366,7 @@ pnpm --filter @sori/database db:migrate   # 마이그레이션
 
 # 타입 체크
 pnpm --filter @sori/web exec tsc --noEmit
+pnpm --filter @sori/cdn exec tsc --noEmit
 ```
 
 ---

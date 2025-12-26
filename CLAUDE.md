@@ -37,7 +37,8 @@ packages/
 └── database/   # Prisma ORM + PostgreSQL client
 
 apps/
-└── web/        # Admin dashboard (TanStack Start + React 19)
+├── cdn/        # Widget CDN - cdn.sori.life (S3 + CloudFront, static only)
+└── web/        # Admin + API - app.sori.life (TanStack Start + React 19)
 ```
 
 ### Tech Stack
@@ -60,18 +61,16 @@ Organization (tenant)
 
 - `packages/database/prisma/schema.prisma` - Database schema
 - `apps/web/src/routes/` - Page routes (TanStack Router file-based routing)
+- `apps/web/src/routes/api/v1/feedback.ts` - Feedback submission API
 - `apps/web/src/server/` - Server functions (auth, feedback, organization, projects)
-- `apps/web/src/routes/api/v1/` - Public API endpoints (feedback submission, widget script)
+- `apps/cdn/src/widget.ts` - Widget script (static)
 
 ### Widget Integration
 
-The widget is served from `/api/v1/widget` and submits to `/api/v1/feedback`. Customer integration:
+The widget is served from `cdn.sori.life/widget.js` and submits to `app.sori.life/api/v1/feedback`.
 
 ```html
-<script>
-window.SoriWidgetConfig = { projectId: 'PROJECT_ID', apiUrl: 'https://sori.io' };
-</script>
-<script src="https://sori.io/api/v1/widget"></script>
+<script src="https://cdn.sori.life/widget.js" data-project-id="PROJECT_ID"></script>
 ```
 
 ## Database
