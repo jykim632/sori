@@ -1,13 +1,13 @@
 import { createFileRoute, redirect, useRouter, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { getFeedbacks, updateFeedbackStatus } from "@/server/feedback";
-import { getProjects, createProject } from "@/server/projects";
+import { getProjects, createProject, deleteProject } from "@/server/projects";
 import { getSession } from "@/server/auth";
 import { getUserOrganizations } from "@/server/organization";
 import { getWebhooks, createWebhook, updateWebhook, deleteWebhook, testWebhookById } from "@/server/webhook";
 import { createReply, getReplies, deleteReply as deleteReplyFn } from "@/server/reply";
 import { signOut } from "@/lib/auth-client";
-import { ChevronDown, Plus, MessageSquare, FolderOpen, Copy, Check, X, Building2, Settings, ExternalLink, Globe, Clock, Mail, Bug, HelpCircle, Lightbulb, Trash2, Send, ToggleLeft, ToggleRight, Palette, MessageCircle, Lock } from "lucide-react";
+import { ChevronDown, Plus, MessageSquare, FolderOpen, Copy, Check, X, Building2, Settings, ExternalLink, Globe, Clock, Mail, Bug, HelpCircle, Lightbulb, Trash2, Send, ToggleLeft, ToggleRight, Palette, MessageCircle, Lock, AlertTriangle } from "lucide-react";
 
 type SearchParams = {
   org?: string;
@@ -116,6 +116,12 @@ function AdminPage() {
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [deletingReplyId, setDeletingReplyId] = useState<string | null>(null);
 
+  // Project delete states
+  const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deleteProjectConfirmName, setDeleteProjectConfirmName] = useState("");
+  const [deletingProject, setDeletingProject] = useState(false);
+
   const handleUpdateStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "OPEN" ? "RESOLVED" : "OPEN";
     await updateFeedbackStatus({ data: { id, status: newStatus } });
@@ -161,6 +167,30 @@ function AdminPage() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete || deleteProjectConfirmName !== projectToDelete.name) return;
+
+    setDeletingProject(true);
+    try {
+      await deleteProject({ data: { id: projectToDelete.id } });
+      setShowDeleteProjectModal(false);
+      setProjectToDelete(null);
+      setDeleteProjectConfirmName("");
+      router.invalidate();
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      alert("프로젝트 삭제에 실패했습니다.");
+    } finally {
+      setDeletingProject(false);
+    }
+  };
+
+  const openDeleteProjectModal = (project: { id: string; name: string }) => {
+    setProjectToDelete(project);
+    setDeleteProjectConfirmName("");
+    setShowDeleteProjectModal(true);
   };
 
   // Webhook handlers
@@ -622,6 +652,13 @@ function AdminPage() {
                         <Palette className="w-4 h-4" />
                         위젯 설정
                       </Link>
+                      <button
+                        onClick={() => openDeleteProjectModal({ id: project.id, name: project.name })}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="프로젝트 삭제"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                       <span className="text-xs text-gray-400">
                         {new Date(project.createdAt).toLocaleDateString("ko-KR")}
                       </span>
@@ -1092,6 +1129,66 @@ function AdminPage() {
                 className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
               >
                 닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Project Modal */}
+      {showDeleteProjectModal && projectToDelete && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowDeleteProjectModal(false);
+            setProjectToDelete(null);
+            setDeleteProjectConfirmName("");
+          }}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">프로젝트를 삭제하시겠습니까?</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  이 작업은 되돌릴 수 없습니다. 프로젝트와 연결된 모든 피드백 데이터가 영구적으로 삭제됩니다.
+                </p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                확인을 위해 프로젝트 이름 <span className="font-semibold text-red-600">{projectToDelete.name}</span>을 입력하세요
+              </label>
+              <input
+                type="text"
+                value={deleteProjectConfirmName}
+                onChange={(e) => setDeleteProjectConfirmName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder={projectToDelete.name}
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteProjectModal(false);
+                  setProjectToDelete(null);
+                  setDeleteProjectConfirmName("");
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteProject}
+                disabled={deletingProject || deleteProjectConfirmName !== projectToDelete.name}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {deletingProject ? "삭제 중..." : "영구 삭제"}
               </button>
             </div>
           </div>

@@ -1,8 +1,8 @@
-import { createFileRoute, redirect, Link } from "@tanstack/react-router";
+import { createFileRoute, redirect, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { getProjectById, updateProject, generateApiKey, revokeApiKey } from "@/server/projects";
+import { getProjectById, updateProject, generateApiKey, revokeApiKey, deleteProject } from "@/server/projects";
 import { getSession } from "@/server/auth";
-import { ArrowLeft, Check, Palette, Save, RotateCcw, Eye, Key, Copy, RefreshCw, Trash2, EyeOff, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Check, Palette, Save, RotateCcw, Eye, Key, Copy, RefreshCw, Trash2, EyeOff, AlertTriangle, Settings, Globe } from "lucide-react";
 
 type ThemePreset = "default" | "minimal" | "rounded";
 type SizeToken = "sm" | "md" | "lg";
@@ -93,6 +93,7 @@ export const Route = createFileRoute("/admin/projects/$projectId")({
 
 function ProjectSettingsPage() {
   const { project } = Route.useLoaderData();
+  const router = useRouter();
 
   // Initialize config from project or default
   const initialConfig: WidgetConfig = (project.widgetConfig as WidgetConfig) || {
@@ -103,6 +104,19 @@ function ProjectSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Basic info state
+  const [projectName, setProjectName] = useState(project.name);
+  const [allowedOrigins, setAllowedOrigins] = useState(
+    (project.allowedOrigins as string[])?.join("\n") || ""
+  );
+  const [savingBasicInfo, setSavingBasicInfo] = useState(false);
+  const [basicInfoSaved, setBasicInfoSaved] = useState(false);
+
+  // Delete state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   // API Key state
   const [apiKey, setApiKey] = useState<string | null>((project as { apiKey?: string | null }).apiKey || null);
@@ -153,6 +167,45 @@ function ProjectSettingsPage() {
   const maskApiKey = (key: string) => {
     if (key.length <= 12) return key;
     return key.slice(0, 12) + "••••••••••••••••••••";
+  };
+
+  const handleSaveBasicInfo = async () => {
+    if (!projectName.trim()) return;
+
+    setSavingBasicInfo(true);
+    try {
+      await updateProject({
+        data: {
+          id: project.id,
+          name: projectName.trim(),
+          allowedOrigins: allowedOrigins
+            .split("\n")
+            .map((o) => o.trim())
+            .filter(Boolean),
+        },
+      });
+      setBasicInfoSaved(true);
+      setTimeout(() => setBasicInfoSaved(false), 3000);
+    } catch (error) {
+      console.error("Failed to save basic info:", error);
+      alert("저장에 실패했습니다.");
+    } finally {
+      setSavingBasicInfo(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (deleteConfirmName !== project.name) return;
+
+    setDeleting(true);
+    try {
+      await deleteProject({ data: { id: project.id } });
+      router.navigate({ to: "/admin", search: { tab: "projects" } });
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      alert("프로젝트 삭제에 실패했습니다.");
+      setDeleting(false);
+    }
   };
 
   // Get resolved theme (preset + custom overrides)
@@ -250,6 +303,56 @@ function ProjectSettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Settings Panel */}
           <div className="space-y-6">
+            {/* Basic Info Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                기본 정보
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    프로젝트 이름
+                  </label>
+                  <input
+                    type="text"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="My Project"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="flex items-center gap-1">
+                      <Globe className="w-4 h-4" />
+                      허용 도메인
+                    </span>
+                  </label>
+                  <textarea
+                    value={allowedOrigins}
+                    onChange={(e) => setAllowedOrigins(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows={3}
+                    placeholder={"https://myapp.com\nhttps://*.myapp.com"}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    한 줄에 하나씩 입력하세요. 비워두면 모든 도메인에서 위젯을 사용할 수 있습니다.
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleSaveBasicInfo}
+                    disabled={savingBasicInfo || !projectName.trim()}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  >
+                    {basicInfoSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                    {savingBasicInfo ? "저장 중..." : basicInfoSaved ? "저장됨" : "저장"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* API Key Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -384,6 +487,55 @@ function ProjectSettingsPage() {
                         className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
                       >
                         {apiKeyLoading ? "삭제 중..." : "삭제"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Delete Project Confirmation Modal */}
+              {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-xl shadow-xl p-6 max-w-md mx-4">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">프로젝트를 삭제하시겠습니까?</h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          이 작업은 되돌릴 수 없습니다. 프로젝트와 연결된 모든 피드백 데이터가 영구적으로 삭제됩니다.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        확인을 위해 프로젝트 이름 <span className="font-semibold text-red-600">{project.name}</span>을 입력하세요
+                      </label>
+                      <input
+                        type="text"
+                        value={deleteConfirmName}
+                        onChange={(e) => setDeleteConfirmName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder={project.name}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => {
+                          setShowDeleteConfirm(false);
+                          setDeleteConfirmName("");
+                        }}
+                        className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={handleDeleteProject}
+                        disabled={deleting || deleteConfirmName !== project.name}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {deleting ? "삭제 중..." : "영구 삭제"}
                       </button>
                     </div>
                   </div>
@@ -683,6 +835,30 @@ function ProjectSettingsPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Danger Zone */}
+            <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
+              <h2 className="font-semibold text-red-600 mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                위험 영역
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-gray-900">프로젝트 삭제</h3>
+                    <p className="text-sm text-gray-500">
+                      프로젝트와 모든 피드백 데이터가 영구적으로 삭제됩니다.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
