@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
+import { Mail, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -12,16 +13,31 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setNeedsVerification(false);
     setLoading(true);
 
     try {
       const result = await signIn.email({ email, password });
       if (result.error) {
-        setError(result.error.message || "로그인에 실패했습니다");
+        const errorMessage = result.error.message || "";
+        // better-auth에서 이메일 미인증 시 반환하는 에러 체크
+        if (
+          errorMessage.toLowerCase().includes("email") &&
+          (errorMessage.toLowerCase().includes("verif") ||
+            errorMessage.toLowerCase().includes("not verified"))
+        ) {
+          setNeedsVerification(true);
+          setError("이메일 인증이 필요합니다");
+        } else {
+          setError(errorMessage || "로그인에 실패했습니다");
+        }
       } else {
         navigate({ to: "/admin" });
       }
@@ -29,6 +45,33 @@ function LoginPage() {
       setError("로그인 중 오류가 발생했습니다");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError("이메일을 입력해주세요");
+      return;
+    }
+
+    setResending(true);
+    try {
+      const response = await fetch("/api/auth/send-verification-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
+        setResent(true);
+        setTimeout(() => setResent(false), 5000);
+      } else {
+        setError("인증 메일 발송에 실패했습니다");
+      }
+    } catch {
+      setError("인증 메일 발송 중 오류가 발생했습니다");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -56,8 +99,40 @@ function LoginPage() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div className={`px-4 py-3 rounded-lg text-sm ${needsVerification ? "bg-amber-50 border border-amber-200" : "bg-red-50 border border-red-200 text-red-600"}`}>
+              {needsVerification ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-amber-700">
+                    <Mail className="w-4 h-4" />
+                    <span className="font-medium">{error}</span>
+                  </div>
+                  <p className="text-amber-600 text-sm">
+                    회원가입 시 발송된 인증 메일을 확인해주세요. 메일함에서 [Sori] 이메일 인증 제목의 메일을 찾아 인증 버튼을 클릭하세요.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resending || resent}
+                    className="flex items-center gap-2 text-sm text-amber-700 hover:text-amber-800 font-medium disabled:opacity-50"
+                  >
+                    {resent ? (
+                      <>인증 메일이 재발송되었습니다</>
+                    ) : resending ? (
+                      <>
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        발송 중...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3 h-3" />
+                        인증 메일 다시 보내기
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                error
+              )}
             </div>
           )}
 

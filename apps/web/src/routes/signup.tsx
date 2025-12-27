@@ -12,12 +12,19 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!agreeTerms || !agreePrivacy) {
+      setError("서비스 이용약관과 개인정보처리방침에 동의해주세요");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("비밀번호가 일치하지 않습니다");
@@ -132,26 +139,54 @@ function SignupPage() {
             </div>
           </div>
 
+          <div className="space-y-3 pt-2">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreeTerms}
+                onChange={(e) => setAgreeTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="text-sm text-gray-600">
+                <a
+                  href="/terms"
+                  target="_blank"
+                  className="text-indigo-600 hover:text-indigo-500 font-medium"
+                >
+                  서비스 이용약관
+                </a>
+                에 동의합니다 <span className="text-red-500">*</span>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreePrivacy}
+                onChange={(e) => setAgreePrivacy(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span className="text-sm text-gray-600">
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  className="text-indigo-600 hover:text-indigo-500 font-medium"
+                >
+                  개인정보처리방침
+                </a>
+                에 동의합니다 <span className="text-red-500">*</span>
+              </span>
+            </label>
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !agreeTerms || !agreePrivacy}
             className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "가입 중..." : "회원가입"}
           </button>
         </form>
-
-        <p className="mt-4 text-center text-xs text-gray-500">
-          가입 시{" "}
-          <a href="#" className="text-indigo-600 hover:text-indigo-500">
-            서비스 이용약관
-          </a>
-          과{" "}
-          <a href="#" className="text-indigo-600 hover:text-indigo-500">
-            개인정보처리방침
-          </a>
-          에 동의하게 됩니다.
-        </p>
       </div>
     </div>
   );

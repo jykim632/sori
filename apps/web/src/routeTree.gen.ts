@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OrganizationsRouteImport } from './routes/organizations'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
@@ -30,9 +32,19 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrganizationsRoute = OrganizationsRouteImport.update({
@@ -111,7 +123,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/organizations': typeof OrganizationsRoute
+  '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/projects/$projectId': typeof AdminProjectsProjectIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -128,7 +142,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/organizations': typeof OrganizationsRoute
+  '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/projects/$projectId': typeof AdminProjectsProjectIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -146,7 +162,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/organizations': typeof OrganizationsRoute
+  '/privacy': typeof PrivacyRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/projects/$projectId': typeof AdminProjectsProjectIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -165,7 +183,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/organizations'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/admin/projects/$projectId'
     | '/api/auth/$'
@@ -182,7 +202,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/organizations'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/admin/projects/$projectId'
     | '/api/auth/$'
@@ -199,7 +221,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/organizations'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/admin/projects/$projectId'
     | '/api/auth/$'
@@ -217,7 +241,9 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   OrganizationsRoute: typeof OrganizationsRoute
+  PrivacyRoute: typeof PrivacyRoute
   SignupRoute: typeof SignupRoute
+  TermsRoute: typeof TermsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1FeedbackRoute: typeof ApiV1FeedbackRoute
@@ -233,11 +259,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/organizations': {
@@ -393,7 +433,9 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   OrganizationsRoute: OrganizationsRoute,
+  PrivacyRoute: PrivacyRoute,
   SignupRoute: SignupRoute,
+  TermsRoute: TermsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1FeedbackRoute: ApiV1FeedbackRoute,
