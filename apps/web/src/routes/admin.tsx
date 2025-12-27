@@ -1,13 +1,13 @@
 import { createFileRoute, redirect, useRouter, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { getFeedbacks, updateFeedbackStatus } from "@/server/feedback";
-import { getProjects, createProject, deleteProject } from "@/server/projects";
+import { getProjects, createProject, deleteProject, updateProject } from "@/server/projects";
 import { getSession } from "@/server/auth";
 import { getUserOrganizations } from "@/server/organization";
 import { getWebhooks, createWebhook, updateWebhook, deleteWebhook, testWebhookById } from "@/server/webhook";
 import { createReply, getReplies, deleteReply as deleteReplyFn } from "@/server/reply";
 import { signOut } from "@/lib/auth-client";
-import { ChevronDown, Plus, MessageSquare, FolderOpen, Copy, Check, X, Building2, Settings, ExternalLink, Globe, Clock, Mail, Bug, HelpCircle, Lightbulb, Trash2, Send, ToggleLeft, ToggleRight, Palette, MessageCircle, Lock, AlertTriangle } from "lucide-react";
+import { ChevronDown, Plus, MessageSquare, FolderOpen, Copy, Check, X, Building2, Settings, ExternalLink, Globe, Clock, Mail, Bug, HelpCircle, Lightbulb, Trash2, Send, ToggleLeft, ToggleRight, Palette, MessageCircle, Lock, AlertTriangle, Pencil } from "lucide-react";
 
 type SearchParams = {
   org?: string;
@@ -122,6 +122,13 @@ function AdminPage() {
   const [deleteProjectConfirmName, setDeleteProjectConfirmName] = useState("");
   const [deletingProject, setDeletingProject] = useState(false);
 
+  // Project edit states
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<{ id: string; name: string; allowedOrigins: string[] } | null>(null);
+  const [editProjectName, setEditProjectName] = useState("");
+  const [editProjectOrigins, setEditProjectOrigins] = useState("");
+  const [savingProject, setSavingProject] = useState(false);
+
   const handleUpdateStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "OPEN" ? "RESOLVED" : "OPEN";
     await updateFeedbackStatus({ data: { id, status: newStatus } });
@@ -191,6 +198,41 @@ function AdminPage() {
     setProjectToDelete(project);
     setDeleteProjectConfirmName("");
     setShowDeleteProjectModal(true);
+  };
+
+  const openEditProjectModal = (project: { id: string; name: string; allowedOrigins: string[] }) => {
+    setProjectToEdit(project);
+    setEditProjectName(project.name);
+    setEditProjectOrigins(project.allowedOrigins.join("\n"));
+    setShowEditProjectModal(true);
+  };
+
+  const handleUpdateProject = async () => {
+    if (!projectToEdit || !editProjectName.trim()) return;
+
+    setSavingProject(true);
+    try {
+      await updateProject({
+        data: {
+          id: projectToEdit.id,
+          name: editProjectName.trim(),
+          allowedOrigins: editProjectOrigins
+            .split("\n")
+            .map((o) => o.trim())
+            .filter(Boolean),
+        },
+      });
+      setShowEditProjectModal(false);
+      setProjectToEdit(null);
+      setEditProjectName("");
+      setEditProjectOrigins("");
+      router.invalidate();
+    } catch (error) {
+      console.error("Failed to update project:", error);
+      alert("프로젝트 수정에 실패했습니다.");
+    } finally {
+      setSavingProject(false);
+    }
   };
 
   // Webhook handlers
@@ -636,7 +678,17 @@ function AdminPage() {
                 <div key={project.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                        <span className="text-xs text-gray-400 font-mono">{project.id}</span>
+                        <button
+                          onClick={() => copyToClipboard(project.id, project.id)}
+                          className="p-0.5 text-gray-400 hover:text-indigo-600 transition-colors"
+                          title="ID 복사"
+                        >
+                          {copiedId === project.id ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
                       <p className="text-sm text-gray-500 mt-1">
                         {project.allowedOrigins.length > 0
                           ? project.allowedOrigins.join(", ")
@@ -653,6 +705,13 @@ function AdminPage() {
                         위젯 설정
                       </Link>
                       <button
+                        onClick={() => openEditProjectModal({ id: project.id, name: project.name, allowedOrigins: project.allowedOrigins })}
+                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        title="프로젝트 수정"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => openDeleteProjectModal({ id: project.id, name: project.name })}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="프로젝트 삭제"
@@ -663,20 +722,6 @@ function AdminPage() {
                         {new Date(project.createdAt).toLocaleDateString("ko-KR")}
                       </span>
                     </div>
-                  </div>
-
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-gray-500 uppercase">Project ID</span>
-                      <button
-                        onClick={() => copyToClipboard(project.id, project.id)}
-                        className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800"
-                      >
-                        {copiedId === project.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {copiedId === project.id ? "복사됨" : "복사"}
-                      </button>
-                    </div>
-                    <code className="text-sm text-gray-700 font-mono">{project.id}</code>
                   </div>
 
                   <div className="mt-4 p-4 bg-indigo-50 rounded-lg">
@@ -1189,6 +1234,86 @@ function AdminPage() {
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {deletingProject ? "삭제 중..." : "영구 삭제"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project Modal */}
+      {showEditProjectModal && projectToEdit && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowEditProjectModal(false);
+            setProjectToEdit(null);
+            setEditProjectName("");
+            setEditProjectOrigins("");
+          }}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md lg:max-w-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">프로젝트 수정</h3>
+              <button
+                onClick={() => {
+                  setShowEditProjectModal(false);
+                  setProjectToEdit(null);
+                  setEditProjectName("");
+                  setEditProjectOrigins("");
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  프로젝트 이름
+                </label>
+                <input
+                  type="text"
+                  value={editProjectName}
+                  onChange={(e) => setEditProjectName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="My Project"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  허용 도메인 <span className="text-gray-400 font-normal">(한 줄에 하나씩)</span>
+                </label>
+                <textarea
+                  value={editProjectOrigins}
+                  onChange={(e) => setEditProjectOrigins(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  rows={4}
+                  placeholder={"https://myapp.com\nhttps://*.myapp.com"}
+                />
+                <p className="mt-1 text-xs text-gray-500">비워두면 모든 도메인 허용</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditProjectModal(false);
+                  setProjectToEdit(null);
+                  setEditProjectName("");
+                  setEditProjectOrigins("");
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleUpdateProject}
+                disabled={savingProject || !editProjectName.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingProject ? "저장 중..." : "저장"}
               </button>
             </div>
           </div>
