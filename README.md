@@ -40,7 +40,7 @@
 ```html
 <script
   src="https://your-domain.com/api/v1/widget"
-  data-project="YOUR_PROJECT_ID"
+  data-project-id="YOUR_PROJECT_ID"
   defer
 ></script>
 ```

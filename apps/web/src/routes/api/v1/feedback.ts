@@ -54,7 +54,7 @@ export const Route = createFileRoute("/api/v1/feedback")({
         const corsHeaders = {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Headers": "Content-Type, X-Project-Id",
         };
 
         try {
@@ -75,7 +75,9 @@ export const Route = createFileRoute("/api/v1/feedback")({
           }
 
           const body = await request.json();
-          const { projectId, type, message, email, metadata } = body;
+          const { type, message, email, metadata } = body;
+          // Support both header and body for projectId
+          const projectId = request.headers.get("X-Project-Id") || body.projectId;
 
           // Validate required fields
           if (!projectId || !type || !message) {
@@ -188,7 +190,7 @@ export const Route = createFileRoute("/api/v1/feedback")({
           headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Headers": "Content-Type, X-Project-Id",
           },
         });
       },

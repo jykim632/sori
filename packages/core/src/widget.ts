@@ -6,7 +6,7 @@ import { icons } from "./icons";
 import { resolveTheme, THEME_PRESETS } from "./themes";
 
 const DEFAULT_CONFIG: Required<Omit<SoriConfig, "projectId">> = {
-  apiUrl: "https://api.sori.io",
+  apiUrl: "https://web.sori.life",
   position: "bottom-right",
   primaryColor: "#4F46E5",
   greeting: "",
