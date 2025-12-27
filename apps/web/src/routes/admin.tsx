@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useRouter, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getFeedbacks, updateFeedbackStatus } from "@/server/feedback";
 import { getProjects, createProject, deleteProject, updateProject } from "@/server/projects";
 import { getSession } from "@/server/auth";
@@ -96,7 +96,12 @@ function AdminPage() {
   const [newProjectOrigins, setNewProjectOrigins] = useState("");
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("");
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   // Webhook states
   const [showNewWebhook, setShowNewWebhook] = useState(false);
@@ -730,7 +735,7 @@ function AdminPage() {
                       <button
                         onClick={() =>
                           copyToClipboard(
-                            `<script src="${window.location.origin}/api/v1/widget" data-project-id="${project.id}"></script>`,
+                            `<script src="${origin}/api/v1/widget" data-project-id="${project.id}"></script>`,
                             `embed-${project.id}`
                           )
                         }
@@ -740,7 +745,7 @@ function AdminPage() {
                         {copiedId === `embed-${project.id}` ? "복사됨" : "복사"}
                       </button>
                     </div>
-                    <code className="text-xs text-indigo-900 font-mono break-all">{`<script src="${window.location.origin}/api/v1/widget" data-project-id="${project.id}"></script>`}</code>
+                    <code className="text-xs text-indigo-900 font-mono break-all">{`<script src="${origin}/api/v1/widget" data-project-id="${project.id}"></script>`}</code>
                   </div>
                 </div>
               ))}
