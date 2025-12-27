@@ -18,7 +18,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/gzip-3.2KB-brightgreen" alt="Bundle Size" />
   <img src="https://img.shields.io/badge/dependencies-0-blue" alt="Zero Dependencies" />
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" />
+  <img src="https://img.shields.io/badge/license-Apache%202.0-green" alt="Apache 2.0 License" />
 </p>
 
 ---
@@ -196,8 +196,7 @@ pnpm build
 
 ## License
 
-- `@sori/core` and `@sori/react` - [MIT](./LICENSE)
-- Admin dashboard - Contact for commercial license
+This project is licensed under the [Apache License 2.0](./LICENSE).
 
 ## Links
 

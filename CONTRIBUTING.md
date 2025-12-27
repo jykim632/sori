@@ -99,4 +99,6 @@ apps/
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By submitting a pull request, you agree that your contribution is licensed under the Apache License 2.0 and that you grant a perpetual, worldwide, non-exclusive license to the project maintainers and Sori.
+
+Please read our [Contributor License Agreement (CLA)](./CLA.md) for full details.
