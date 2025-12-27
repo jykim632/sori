@@ -19,6 +19,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiV1WidgetRouteImport } from './routes/api/v1/widget'
 import { Route as ApiV1FeedbacksRouteImport } from './routes/api/v1/feedbacks'
 import { Route as ApiV1FeedbackRouteImport } from './routes/api/v1/feedback'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -77,6 +78,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1WidgetRoute = ApiV1WidgetRouteImport.update({
+  id: '/api/v1/widget',
+  path: '/api/v1/widget',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1FeedbacksRoute = ApiV1FeedbacksRouteImport.update({
   id: '/api/v1/feedbacks',
   path: '/api/v1/feedbacks',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/feedback': typeof ApiV1FeedbackRoute
   '/api/v1/feedbacks': typeof ApiV1FeedbacksRouteWithChildren
+  '/api/v1/widget': typeof ApiV1WidgetRoute
   '/api/v1/feedbacks/$feedbackId': typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/feedback': typeof ApiV1FeedbackRoute
   '/api/v1/feedbacks': typeof ApiV1FeedbacksRouteWithChildren
+  '/api/v1/widget': typeof ApiV1WidgetRoute
   '/api/v1/feedbacks/$feedbackId': typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/v1/feedback': typeof ApiV1FeedbackRoute
   '/api/v1/feedbacks': typeof ApiV1FeedbacksRouteWithChildren
+  '/api/v1/widget': typeof ApiV1WidgetRoute
   '/api/v1/feedbacks/$feedbackId': typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/v1/feedback'
     | '/api/v1/feedbacks'
+    | '/api/v1/widget'
     | '/api/v1/feedbacks/$feedbackId'
     | '/api/v1/feedbacks/$feedbackId/replies'
     | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/v1/feedback'
     | '/api/v1/feedbacks'
+    | '/api/v1/widget'
     | '/api/v1/feedbacks/$feedbackId'
     | '/api/v1/feedbacks/$feedbackId/replies'
     | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/v1/feedback'
     | '/api/v1/feedbacks'
+    | '/api/v1/widget'
     | '/api/v1/feedbacks/$feedbackId'
     | '/api/v1/feedbacks/$feedbackId/replies'
     | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
@@ -248,6 +260,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1FeedbackRoute: typeof ApiV1FeedbackRoute
   ApiV1FeedbacksRoute: typeof ApiV1FeedbacksRouteWithChildren
+  ApiV1WidgetRoute: typeof ApiV1WidgetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -320,6 +333,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/widget': {
+      id: '/api/v1/widget'
+      path: '/api/v1/widget'
+      fullPath: '/api/v1/widget'
+      preLoaderRoute: typeof ApiV1WidgetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/feedbacks': {
@@ -440,6 +460,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1FeedbackRoute: ApiV1FeedbackRoute,
   ApiV1FeedbacksRoute: ApiV1FeedbacksRouteWithChildren,
+  ApiV1WidgetRoute: ApiV1WidgetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

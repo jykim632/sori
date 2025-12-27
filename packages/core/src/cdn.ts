@@ -3,7 +3,7 @@
  * Auto-initializes widget from script tag data attributes
  *
  * Usage:
- * <script src="https://cdn.sori.io/widget.js" data-project="your-project-id"></script>
+ * <script src="https://cdn.sori.io/widget.js" data-project-id="your-project-id"></script>
  */
 
 import { createWidget } from "./widget";
@@ -18,9 +18,9 @@ function autoInit() {
   const script = document.currentScript as HTMLScriptElement | null;
   if (!script) return;
 
-  const projectId = script.dataset.project;
+  const projectId = script.dataset.projectId;
   if (!projectId) {
-    console.warn("[Sori] Missing data-project attribute");
+    console.warn("[Sori] Missing data-project-id attribute");
     return;
   }
 
