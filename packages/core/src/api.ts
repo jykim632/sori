@@ -1,6 +1,6 @@
 import type { FeedbackPayload } from "./types";
 
-const DEFAULT_API_URL = "https://api.sori.io";
+const DEFAULT_API_URL = "https://web.sori.life";
 
 export async function submitFeedback(
   projectId: string,
@@ -8,7 +8,7 @@ export async function submitFeedback(
   apiUrl: string = DEFAULT_API_URL
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
-    const response = await fetch(`${apiUrl}/api/feedback`, {
+    const response = await fetch(`${apiUrl}/api/v1/feedback`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

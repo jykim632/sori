@@ -62,7 +62,7 @@ import '@competitor/widget/styles.css'
 ### Sori (우리)
 ```html
 <!-- 끝. 이게 전부 -->
-<script src="https://cdn.sori.io/widget.js" data-project="abc123"></script>
+<script src="https://cdn.sori.io/widget.js" data-project-id="abc123"></script>
 ```
 
 또는 React:

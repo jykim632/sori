@@ -53,7 +53,7 @@ export interface WidgetConfig {
 export interface SoriConfig {
   /** Project ID from Sori dashboard */
   projectId: string;
-  /** API endpoint (default: https://api.sori.io) */
+  /** API endpoint (default: https://web.sori.life) */
   apiUrl?: string;
   /** Widget position (default: bottom-right) */
   position?: Position;
