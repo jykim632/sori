@@ -1,0 +1,70 @@
+name: Bug Report
+description: 버그 리포트
+title: "[Bug] "
+labels: ["type: bug"]
+body:
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: 어떤 패키지/앱에서 발생한 버그인가요?
+      options:
+        - web (apps/web)
+        - cdn (apps/cdn)
+        - core (packages/core)
+        - database (packages/database)
+        - 기타
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: 심각도를 선택해주세요
+      options:
+        - high (서비스 장애)
+        - medium (기능 오류)
+        - low (사소한 문제)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 버그 설명
+      description: 어떤 문제가 발생했나요?
+      placeholder: 버그를 설명해주세요
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 재현 방법
+      description: 버그를 재현하는 방법
+      placeholder: |
+        1. '...'로 이동
+        2. '...' 클릭
+        3. 오류 발생
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+      description: 정상적으로 동작했다면 어떻게 되어야 하나요?
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 환경
+      description: 브라우저, OS 등 환경 정보
+      placeholder: |
+        - 브라우저: Chrome 120
+        - OS: macOS 14.0
+    validations:
+      required: false
