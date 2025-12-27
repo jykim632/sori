@@ -1,6 +1,6 @@
 # Contributing to Sori
 
-Thank you for your interest in contributing to Sori!
+Sori 프로젝트 기여 가이드입니다.
 
 ## Getting Started
 
@@ -33,32 +33,108 @@ pnpm db:push
 pnpm dev
 ```
 
-## Development Workflow
-
-### Branch Naming
-
-- `feat/description` - New features
-- `fix/description` - Bug fixes
-- `docs/description` - Documentation
-- `refactor/description` - Code refactoring
-
-### Commit Messages
-
-We follow [Conventional Commits](https://www.conventionalcommits.org/):
+## 브랜치 전략
 
 ```
-feat: add webhook support for Discord
-fix: resolve widget z-index issue
-docs: update installation guide
+main        ← 프로덕션 (배포용)
+develop     ← 개발 통합 브랜치
+feature/*   ← 기능 개발
+fix/*       ← 버그 수정
 ```
 
-### Pull Request Process
+### 규칙
 
-1. Create a feature branch from `main`
-2. Make your changes
-3. Run tests: `pnpm test`
-4. Run type check: `pnpm typecheck`
-5. Submit a PR with a clear description
+- `main`: 직접 push 금지, PR을 통해서만 머지
+- `develop`: 기능 개발 완료 후 PR
+- 새 작업 시 `develop`에서 브랜치 생성:
+
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/기능명
+```
+
+## 이슈 관리
+
+### 이슈 생성
+
+1. 기존 이슈 중 중복 확인
+2. 적절한 템플릿 선택 (Feature / Bug)
+3. Labels 지정
+
+### Labels
+
+| Label | 설명 |
+|-------|------|
+| `type: feature` | 새 기능 |
+| `type: bug` | 버그 수정 |
+| `type: refactor` | 리팩토링 |
+| `type: docs` | 문서 |
+| `type: chore` | 설정, 의존성 등 |
+| `scope: web` | apps/web |
+| `scope: cdn` | apps/cdn |
+| `scope: core` | packages/core |
+| `scope: database` | packages/database |
+| `priority: high` | 긴급 |
+| `priority: medium` | 보통 |
+| `priority: low` | 낮음 |
+
+## 커밋 메시지
+
+[Conventional Commits](https://www.conventionalcommits.org/) 형식을 따릅니다.
+
+### 형식
+
+```
+<type>(<scope>): <description>
+
+[body]
+```
+
+### Type
+
+| Type | 설명 |
+|------|------|
+| `feat` | 새 기능 |
+| `fix` | 버그 수정 |
+| `refactor` | 리팩토링 (기능 변경 없음) |
+| `docs` | 문서 수정 |
+| `chore` | 빌드, 설정 등 |
+| `test` | 테스트 추가/수정 |
+
+### Scope (선택)
+
+`web`, `cdn`, `core`, `database`, `widget`, `auth` 등
+
+### 예시
+
+```bash
+feat(widget): 다크모드 지원 추가
+fix(web): 로그인 리다이렉트 오류 수정
+refactor(core): 이벤트 핸들러 구조 개선
+docs: README 업데이트
+chore: 의존성 업데이트
+```
+
+## Pull Request
+
+### PR 생성 전
+
+1. 관련 이슈 확인 (없으면 먼저 이슈 생성)
+2. `develop` 브랜치 최신화
+3. 빌드 확인: `pnpm build`
+
+### PR 규칙
+
+- 제목: 커밋 메시지와 동일한 형식
+- 본문: PR 템플릿 작성
+- 관련 이슈 연결: `Closes #123`
+
+### 머지 조건
+
+- 코드 리뷰 승인
+- 빌드 성공
+- 충돌 해결
 
 ## Project Structure
 
@@ -69,6 +145,7 @@ packages/
 └── database/   # Prisma schema and client
 
 apps/
+├── cdn/        # Widget CDN
 └── web/        # Admin dashboard
 ```
 
@@ -91,11 +168,6 @@ apps/
 - We use Prettier for formatting
 - TypeScript strict mode is enabled
 - Prefer explicit types over inference for public APIs
-
-## Questions?
-
-- Open a [GitHub Issue](https://github.com/your-org/sori/issues)
-- Join our [Discord](https://discord.gg/sori)
 
 ## License
 
