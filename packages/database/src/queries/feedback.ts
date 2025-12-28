@@ -58,30 +58,33 @@ export async function getFeedbacks(
 interface CreateFeedbackInput {
   type: FeedbackType;
   message: string;
-  email?: string | null;
+  email: string;
   projectId: string;
   metadata?: Record<string, unknown> | null;
+  privacyAgreedAt: Date;
 }
 
 export async function createFeedback(input: CreateFeedbackInput): Promise<Feedback> {
-  const { type, message, email, projectId, metadata } = input;
+  const { type, message, email, projectId, metadata, privacyAgreedAt } = input;
   const id = generateId();
 
   const sql = `
-    INSERT INTO feedback (id, type, message, email, project_id, metadata, status, created_at)
-    VALUES ($1, $2, $3, $4, $5, $6, 'OPEN', now())
+    INSERT INTO feedback (id, type, message, email, project_id, metadata, status, privacy_agreed_at, created_at)
+    VALUES ($1, $2, $3, $4, $5, $6, 'OPEN', $7, now())
     RETURNING
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", created_at as "createdAt", resolved_at as "resolvedAt"
+      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      created_at as "createdAt", resolved_at as "resolvedAt"
   `;
 
   return queryReturning<Feedback>(sql, [
     id,
     type,
     message,
-    email ?? null,
+    email,
     projectId,
     metadata ? JSON.stringify(metadata) : null,
+    privacyAgreedAt,
   ]);
 }
 

@@ -17,6 +17,20 @@ export const auth = betterAuth({
       createdAt: "created_at",
       updatedAt: "updated_at",
     },
+    additionalFields: {
+      termsAgreedAt: {
+        type: "date",
+        required: false,
+        input: true,
+        fieldName: "terms_agreed_at",
+      },
+      privacyAgreedAt: {
+        type: "date",
+        required: false,
+        input: true,
+        fieldName: "privacy_agreed_at",
+      },
+    },
   },
   session: {
     fields: {
