@@ -39,7 +39,15 @@ function SignupPage() {
     setLoading(true);
 
     try {
-      const result = await signUp.email({ name, email, password });
+      const now = new Date();
+      // additionalFields (termsAgreedAt, privacyAgreedAt) are configured in auth.ts
+      const result = await signUp.email({
+        name,
+        email,
+        password,
+        termsAgreedAt: now,
+        privacyAgreedAt: now,
+      } as { name: string; email: string; password: string; termsAgreedAt: Date; privacyAgreedAt: Date });
       if (result.error) {
         setError(result.error.message || "회원가입에 실패했습니다");
       } else {

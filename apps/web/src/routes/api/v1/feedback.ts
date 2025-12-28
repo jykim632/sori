@@ -79,10 +79,10 @@ export const Route = createFileRoute("/api/v1/feedback")({
           // Support both header and body for projectId
           const projectId = request.headers.get("X-Project-Id") || body.projectId;
 
-          // Validate required fields
-          if (!projectId || !type || !message) {
+          // Validate required fields (email is now required)
+          if (!projectId || !type || !message || !email) {
             return new Response(
-              JSON.stringify({ error: "Missing required fields" }),
+              JSON.stringify({ error: "Missing required fields (projectId, type, message, email are required)" }),
               {
                 status: 400,
                 headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -112,8 +112,8 @@ export const Route = createFileRoute("/api/v1/feedback")({
             );
           }
 
-          // Validate email format if provided
-          if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          // Validate email format (email is required)
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return new Response(
               JSON.stringify({ error: "Invalid email format" }),
               {
@@ -148,13 +148,14 @@ export const Route = createFileRoute("/api/v1/feedback")({
             );
           }
 
-          // Create feedback
+          // Create feedback with privacy consent timestamp
           const feedback = await createFeedback({
             type: type as FeedbackType,
             message,
-            email: email || null,
+            email,
             metadata: metadata || null,
             projectId,
+            privacyAgreedAt: new Date(),
           });
 
           // Send webhooks (fire and forget)

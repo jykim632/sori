@@ -57,7 +57,7 @@ export const createFeedback = createServerFn({ method: "POST" })
     (d: {
       message: string;
       type: FeedbackType;
-      email?: string;
+      email: string;
       projectId: string;
       metadata?: Record<string, unknown>;
     }) => d
@@ -65,16 +65,17 @@ export const createFeedback = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { message, type, email, projectId, metadata } = data;
 
-    if (!message || !type || !projectId) {
+    if (!message || !type || !projectId || !email) {
       throw new Error("Missing required fields");
     }
 
     return await createFeedbackQuery({
       message,
       type,
-      email: email || null,
+      email,
       projectId,
       metadata: metadata || null,
+      privacyAgreedAt: new Date(),
     });
   });
 
