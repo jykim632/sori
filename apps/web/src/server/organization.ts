@@ -8,7 +8,7 @@ import {
   updateOrganizationWebhook as updateOrganizationWebhookQuery,
   getOrganizationBySlug,
 } from "@sori/database";
-import { getSessionUserId, requireOrgMembership, requireOrgAdmin } from "./auth";
+import { getSessionUserId, requireOrgMembership, requireOrgAdmin } from "./auth-helpers";
 
 // ============================================
 // 조직 생성 (인증 필요)

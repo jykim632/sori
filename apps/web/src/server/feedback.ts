@@ -8,7 +8,7 @@ import {
   type FeedbackType,
   type FeedbackStatus,
 } from "@sori/database";
-import { requireOrgMembership, requireProjectAccess } from "./auth";
+import { requireOrgMembership, requireProjectAccess } from "./auth-helpers";
 
 // ============================================
 // 피드백 조회 (멤버십 필요)
