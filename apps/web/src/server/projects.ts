@@ -13,7 +13,7 @@ import {
   requireOrgAdmin,
   requireProjectAccess,
   requireProjectAdmin,
-} from "./auth";
+} from "./auth-helpers";
 
 // ============================================
 // 프로젝트 조회 (멤버십 필요)
