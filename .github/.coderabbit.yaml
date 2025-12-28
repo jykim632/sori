@@ -1,0 +1,15 @@
+language: "ko"
+reviews:
+  profile: "assertive"   # 리뷰 톤 (chill / assertive 등)
+  request_changes: false
+summary:
+  enabled: true
+
+comments:
+  enabled: true
+  max: 10
+
+ignore:
+  - "**/*.md"
+  - "**/dist/**"
+  - "**/build/**"
