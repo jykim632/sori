@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useRouter, Link } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter, useRouterState, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { getFeedbacksFiltered, updateFeedbackStatus } from "@/server/feedback";
 import { getProjects, createProject, deleteProject, updateProject } from "@/server/projects";
@@ -154,9 +154,22 @@ function AdminPage() {
   const [searchInput, setSearchInput] = useState(filterSearch || "");
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
+  // Router 로딩 상태 (서버/클라이언트 모두 감지)
+  const isRouterLoading = useRouterState({ select: (s) => s.isLoading });
+
+  // Optimistic UI를 위한 pending 상태
+  const [pendingStatus, setPendingStatus] = useState<FeedbackStatus | undefined | null>(null);
+
   useEffect(() => {
     setSearchInput(filterSearch || "");
   }, [filterSearch]);
+
+  // 로딩 완료 시 pending 상태 초기화
+  useEffect(() => {
+    if (!isRouterLoading) {
+      setPendingStatus(null);
+    }
+  }, [isRouterLoading, filterStatus]);
   const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -233,6 +246,11 @@ function AdminPage() {
     const hasPageChange = "page" in updates;
 
     const isFilterChange = hasStatusChange || hasTypeChange || hasProjectChange || hasSearchChange || hasDateFromChange || hasDateToChange;
+
+    // 상태 필터 변경 시 즉시 UI 업데이트 (Optimistic UI)
+    if (hasStatusChange) {
+      setPendingStatus(updates.status);
+    }
 
     router.navigate({
       to: "/admin",
@@ -689,84 +707,78 @@ function AdminPage() {
                     onChange={(start, end) => handleFilterChange({ dateFrom: start, dateTo: end })}
                     placeholder="기간 선택"
                   />
-                </div>
-              </div>
 
-              {/* 상태 탭 */}
-              <div className="flex items-center border-b border-gray-100">
-                <button
-                  onClick={() => handleFilterChange({ status: undefined })}
-                  className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-                    !filterStatus
-                      ? "text-indigo-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  전체
-                  {!filterStatus && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
-                  )}
-                </button>
-                <button
-                  onClick={() => handleFilterChange({ status: "OPEN" })}
-                  className={`px-4 py-3 text-sm font-medium transition-colors relative flex items-center gap-1.5 ${
-                    filterStatus === "OPEN"
-                      ? "text-indigo-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full bg-yellow-400" />
-                  대기중
-                  {filterStatus === "OPEN" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
-                  )}
-                </button>
-                <button
-                  onClick={() => handleFilterChange({ status: "IN_PROGRESS" })}
-                  className={`px-4 py-3 text-sm font-medium transition-colors relative flex items-center gap-1.5 ${
-                    filterStatus === "IN_PROGRESS"
-                      ? "text-indigo-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full bg-blue-400" />
-                  처리중
-                  {filterStatus === "IN_PROGRESS" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
-                  )}
-                </button>
-                <button
-                  onClick={() => handleFilterChange({ status: "RESOLVED" })}
-                  className={`px-4 py-3 text-sm font-medium transition-colors relative flex items-center gap-1.5 ${
-                    filterStatus === "RESOLVED"
-                      ? "text-indigo-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full bg-green-400" />
-                  완료
-                  {filterStatus === "RESOLVED" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
-                  )}
-                </button>
-                <button
-                  onClick={() => handleFilterChange({ status: "CLOSED" })}
-                  className={`px-4 py-3 text-sm font-medium transition-colors relative flex items-center gap-1.5 ${
-                    filterStatus === "CLOSED"
-                      ? "text-indigo-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full bg-gray-400" />
-                  닫힘
-                  {filterStatus === "CLOSED" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
-                  )}
-                </button>
+                  {/* 상태 필터 */}
+                  {(() => {
+                    // pendingStatus가 있으면 그걸 사용 (Optimistic UI)
+                    const activeStatus = pendingStatus !== null ? pendingStatus : filterStatus;
+                    return (
+                      <div className="flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden">
+                        <button
+                          onClick={() => handleFilterChange({ status: undefined })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors ${
+                            !activeStatus
+                              ? "bg-indigo-50 text-indigo-600"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          전체
+                        </button>
+                        <button
+                          onClick={() => handleFilterChange({ status: "OPEN" })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
+                            activeStatus === "OPEN"
+                              ? "bg-yellow-50 text-yellow-700"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-yellow-400" />
+                          대기중
+                        </button>
+                        <button
+                          onClick={() => handleFilterChange({ status: "IN_PROGRESS" })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
+                            activeStatus === "IN_PROGRESS"
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-blue-400" />
+                          처리중
+                        </button>
+                        <button
+                          onClick={() => handleFilterChange({ status: "RESOLVED" })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
+                            activeStatus === "RESOLVED"
+                              ? "bg-green-50 text-green-700"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-green-400" />
+                          완료
+                        </button>
+                        <button
+                          onClick={() => handleFilterChange({ status: "CLOSED" })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
+                            activeStatus === "CLOSED"
+                              ? "bg-gray-100 text-gray-700"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-gray-400" />
+                          닫힘
+                        </button>
+                      </div>
+                    );
+                  })()}
 
-                {/* 결과 수 */}
-                <div className="ml-auto pr-4 text-sm text-gray-400">
-                  {pagination.total}개
+                  {/* 결과 수 */}
+                  <div className="ml-auto text-sm text-gray-400 flex items-center gap-2">
+                    {isRouterLoading && (
+                      <div className="w-3 h-3 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+                    )}
+                    {pagination.total}개
+                  </div>
                 </div>
               </div>
 
@@ -886,7 +898,7 @@ function AdminPage() {
             </div>
 
             {/* 피드백 테이블 */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-opacity ${isRouterLoading ? "opacity-60" : ""}`}>
               <table className="w-full text-left">
               <thead className="bg-gray-50 text-gray-500 text-sm font-medium">
                 <tr>

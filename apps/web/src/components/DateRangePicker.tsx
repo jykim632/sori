@@ -165,13 +165,13 @@ export function DateRangePicker({
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+        className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
           hasValue
             ? "border-indigo-200 bg-indigo-50 text-indigo-600"
             : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
         }`}
       >
-        <CalendarIcon className="w-3.5 h-3.5" />
+        <CalendarIcon className="w-4 h-4" />
         <span>
           {startDate && endDate
             ? `${formatDisplayDate(startDate)} ~ ${formatDisplayDate(endDate)}`
