@@ -7,8 +7,9 @@ import { getUserOrganizations } from "@/server/organization";
 import { getWebhooks, createWebhook, updateWebhook, deleteWebhook, testWebhookById } from "@/server/webhook";
 import { createReply, getReplies, deleteReply as deleteReplyFn } from "@/server/reply";
 import { signOut } from "@/lib/auth-client";
-import { ChevronDown, ChevronLeft, ChevronRight, Plus, MessageSquare, FolderOpen, Copy, Check, X, Building2, Settings, ExternalLink, Globe, Clock, Mail, Bug, HelpCircle, Lightbulb, Trash2, Send, ToggleLeft, ToggleRight, Palette, MessageCircle, Lock, AlertTriangle, Pencil, Search, ArrowUpDown } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Plus, MessageSquare, FolderOpen, Copy, Check, X, Building2, Settings, ExternalLink, Globe, Clock, Mail, Bug, HelpCircle, Lightbulb, Trash2, Send, ToggleLeft, ToggleRight, Palette, MessageCircle, Lock, AlertTriangle, Pencil, Search, ArrowUpDown, RotateCcw } from "lucide-react";
 import { DateRangePicker } from "@/components/DateRangePicker";
+import { DataTable, Column } from "@/components/DataTable";
 import type {
   FeedbackStatus,
   FeedbackType,
@@ -898,76 +899,106 @@ function AdminPage() {
             </div>
 
             {/* 피드백 테이블 */}
-            <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-opacity ${isRouterLoading ? "opacity-60" : ""}`}>
-              <table className="w-full text-left">
-              <thead className="bg-gray-50 text-gray-500 text-sm font-medium">
-                <tr>
-                  <th className="p-4">상태</th>
-                  <th className="p-4">유형</th>
-                  <th className="p-4">메시지</th>
-                  <th className="p-4">프로젝트</th>
-                  <th className="p-4">이메일</th>
-                  <th className="p-4">날짜</th>
-                  <th className="p-4">작업</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {feedbacks.map((feedback) => (
-                  <tr
-                    key={feedback.id}
-                    className="hover:bg-gray-50/50 cursor-pointer"
-                    onClick={() => handleOpenFeedbackModal(feedback)}
-                  >
-                    <td className="p-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          feedback.status === "OPEN"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : feedback.status === "IN_PROGRESS"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {getStatusLabel(feedback.status)}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="flex items-center gap-1.5 text-gray-700">
-                        {getTypeIcon(feedback.type)}
-                        {getTypeLabel(feedback.type)}
-                      </span>
-                    </td>
-                    <td className="p-4 text-gray-600 max-w-md truncate" title={feedback.message}>
-                      {feedback.message}
-                    </td>
-                    <td className="p-4 text-gray-500">{feedback.project?.name}</td>
-                    <td className="p-4 text-gray-500">{feedback.email || "-"}</td>
-                    <td className="p-4 text-gray-400 text-sm">
+            <DataTable<FeedbackWithProject>
+              columns={[
+                {
+                  key: "status",
+                  header: "상태",
+                  render: (feedback) => (
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        feedback.status === "OPEN"
+                          ? "bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20"
+                          : feedback.status === "IN_PROGRESS"
+                            ? "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20"
+                            : feedback.status === "RESOLVED"
+                              ? "bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20"
+                              : "bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20"
+                      }`}
+                    >
+                      {getStatusLabel(feedback.status)}
+                    </span>
+                  ),
+                },
+                {
+                  key: "type",
+                  header: "유형",
+                  render: (feedback) => (
+                    <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${
+                      feedback.type === "BUG"
+                        ? "text-red-600"
+                        : feedback.type === "FEATURE"
+                          ? "text-purple-600"
+                          : "text-blue-600"
+                    }`}>
+                      {getTypeIcon(feedback.type)}
+                      <span className="hidden sm:inline">{getTypeLabel(feedback.type)}</span>
+                    </span>
+                  ),
+                },
+                {
+                  key: "message",
+                  header: "내용",
+                  cellClassName: "max-w-md",
+                  render: (feedback) => (
+                    <div>
+                      <p className="text-sm text-gray-900 font-medium line-clamp-2" title={feedback.message}>
+                        {feedback.message}
+                      </p>
+                      {feedback.email && (
+                        <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                          <Mail className="w-3 h-3" />
+                          {feedback.email}
+                        </p>
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: "project",
+                  header: "프로젝트",
+                  render: (feedback) => (
+                    <span className="text-sm text-gray-500">{feedback.project?.name}</span>
+                  ),
+                },
+                {
+                  key: "date",
+                  header: "날짜",
+                  render: (feedback) => (
+                    <span className="text-sm text-gray-400">
                       {new Date(feedback.createdAt).toLocaleDateString("ko-KR")}
-                    </td>
-                    <td className="p-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUpdateStatus(feedback.id, feedback.status);
-                        }}
-                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        {feedback.status === "OPEN" ? "처리 완료" : "다시 열기"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {feedbacks.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-400">
-                      {hasActiveFilters ? "필터 조건에 맞는 피드백이 없습니다." : "피드백이 없습니다."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            </div>
+                    </span>
+                  ),
+                },
+                {
+                  key: "actions",
+                  header: "작업",
+                  headerClassName: "text-right",
+                  cellClassName: "text-right",
+                  render: (feedback) => (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUpdateStatus(feedback.id, feedback.status);
+                      }}
+                      className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                        feedback.status === "OPEN"
+                          ? "text-green-600 hover:bg-green-50"
+                          : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      }`}
+                      title={feedback.status === "OPEN" ? "완료 처리" : "다시 열기"}
+                    >
+                      {feedback.status === "OPEN" ? <Check className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />}
+                    </button>
+                  ),
+                },
+              ]}
+              data={feedbacks}
+              keyExtractor={(feedback) => feedback.id}
+              onRowClick={handleOpenFeedbackModal}
+              emptyMessage={hasActiveFilters ? "필터 조건에 맞는 피드백이 없습니다." : "피드백이 없습니다."}
+              loading={isRouterLoading}
+            />
 
             {/* 페이지네이션 */}
             {pagination.totalPages > 1 && (
