@@ -1,54 +1,114 @@
-너는 시니어 풀스택 엔지니어 + 아키텍트 역할이다.
-지금부터 우리는 하나의 작업 세션을 진행한다.
+# Issue #8: 피드백 검색 및 필터링
 
-[프로젝트 맥락]
-- 서비스 목적: 웹 서비스를 운영하는 플랫폼들이 사용자 피드백을 쉽게 수집하고 관리할 수 있는 SaaS 솔루션
-- 주요 사용자: 웹 서비스 운영자들
-- 트래픽 규모(현재/예상): 0/1GB
-- 혼자 개발, 운영까지 고려
+> **상태: 완료** (2024-12-28)
+>
+> GitHub Issue: https://github.com/jykim632/sori/issues/8
 
-[기술 스택]
-- Frontend: TanStack Start (React 19, Vite), zod
-- Backend: TanStack Server Functions
-- DB: Supabase (PostgreSQL)
-- Infra: Vercel
+---
 
-[이번 작업의 목표]
-- 현재 어드민 대시보드에서 피드백 목록을 조회할 수 있지만, 검색이나 필터링 기능이 없어 피드백이 많아지면 원하는 항목을 찾기 어려움. 상태, 타입, 프로젝트, 날짜 범위 등 다양한 조건으로 필터링하고 키워드 검색이 가능해야 함.
+## 개요
 
-**구현 범위**
+어드민 대시보드에서 피드백 목록을 검색하고 필터링할 수 있는 기능 추가.
 
-- 키워드 검색 (메시지 내용, 이메일)
-- 상태별 필터 (OPEN, IN_PROGRESS, RESOLVED, CLOSED)pha
-- 타입별 필터 (BUG, INQUIRY, FEATURE)
-- 프로젝트별 필터
-- 날짜 범위 필터 (시작일 ~ 종료일)
-- 정렬 옵션 (최신순, 오래된순, 우선순위순)
-- 페이지네이션
+## 구현 범위
 
-**관련 파일**
+- [x] 키워드 검색 (메시지 내용, 이메일) - debounce 300ms
+- [x] 상태별 필터 (OPEN, IN_PROGRESS, RESOLVED, CLOSED)
+- [x] 타입별 필터 (BUG, INQUIRY, FEATURE)
+- [x] 프로젝트별 필터
+- [x] 날짜 범위 필터 (시작일 ~ 종료일)
+- [x] 정렬 옵션 (최신순, 오래된순, 우선순위순)
+- [x] 페이지네이션
 
-- `apps/web/src/routes/admin.tsx` - 어드민 대시보드 UI
-- `apps/web/src/server/feedback.ts` - 피드백 서버 함수
-- `packages/database/src/index.ts` - 데이터베이스 쿼리
+---
 
-**작업 내용**
+## 구현 내용
 
-1. 검색/필터 UI 컴포넌트 추가
-2. `getFeedbacks` 서버 함수에 필터 파라미터 추가
-3. SQL 쿼리에 WHERE 조건 동적 생성
-4. URL 쿼리 파라미터로 필터 상태 유지
-5. 디바운스된 검색 입력 처리
+### 1. DatePicker 컴포넌트 (PR #23)
 
+공통 컴포넌트로 분리하여 재사용 가능하도록 구현.
 
-[절대 조건]
-- 유지보수성 우선
-- 운영 리스크 최소화
-- 필요 이상으로 복잡하게 만들지 말 것
+**파일 구조:**
+```
+apps/web/src/components/
+├── Calendar.tsx        # 공유 달력 컴포넌트
+├── DatePicker.tsx      # 단일 날짜 선택
+└── DateRangePicker.tsx # 날짜 범위 선택
+```
 
-내가 요청하기 전까지는
-- 코드를 바로 쓰지 말고
-- 설계, 선택지, 리스크부터 정리해줘.
+**주요 기능:**
+- Portal 렌더링: `overflow: hidden` 부모에서도 정상 표시
+- 반응형 위치 조정: 브라우저 크기에 따라 드롭다운 위치 자동 조정
+- 빠른 선택: 최근 7일/30일/90일 버튼
+- Optimistic UI: 내부 상태로 선택 관리 후 완료 버튼으로 확정
+- SSR 호환: `isMounted` 패턴으로 hydration 이슈 방지
 
-[Github Issue]
-- https://github.com/jykim632/sori/issues/8
+### 2. 검색/필터 기능 (PR #24)
+
+**서버 함수:**
+- `getFeedbacksFiltered`: 필터 파라미터를 받아 동적 WHERE 조건 생성
+- Prisma 쿼리로 검색, 필터, 정렬, 페이지네이션 처리
+
+**URL 상태 관리:**
+- TanStack Router의 search params로 필터 상태 유지
+- 페이지 새로고침/공유 시에도 필터 상태 보존
+
+**검색 디바운스:**
+```typescript
+const searchTimeoutRef = useRef<NodeJS.Timeout>();
+searchTimeoutRef.current = setTimeout(() => {
+  handleFilterChange({ search: value || undefined });
+}, 300);
+```
+
+### 3. 로딩 상태 처리
+
+**문제:**
+- 필터 변경 시 서버 요청으로 인한 지연
+- UI가 느리게 반응하는 것처럼 보임
+
+**해결:**
+```typescript
+// TanStack Router의 로딩 상태 감지
+const isRouterLoading = useRouterState({ select: (s) => s.isLoading });
+
+// Optimistic UI - 버튼 클릭 즉시 상태 반영
+const [pendingStatus, setPendingStatus] = useState<FeedbackStatus | undefined | null>(null);
+```
+
+**시각적 피드백:**
+- 필터 버튼: 클릭 즉시 선택 상태 반영 (Optimistic)
+- 결과 수 옆: 스피너 표시
+- 테이블: `opacity-60`으로 로딩 중 표시
+
+### 4. UI 레이아웃
+
+**검색 바 구조:**
+```
+[검색 input] [기간 선택] [상태 필터 버튼] [로딩 스피너] [결과 수]
+```
+
+**추가 필터:**
+```
+[유형 필터] | [프로젝트 드롭다운] | [정렬 드롭다운] | [필터 초기화]
+```
+
+---
+
+## 관련 파일
+
+| 파일 | 설명 |
+|------|------|
+| `apps/web/src/routes/admin.tsx` | 어드민 대시보드 UI |
+| `apps/web/src/server/feedback.ts` | 피드백 서버 함수 |
+| `apps/web/src/components/Calendar.tsx` | 공유 달력 컴포넌트 |
+| `apps/web/src/components/DatePicker.tsx` | 단일 날짜 선택 |
+| `apps/web/src/components/DateRangePicker.tsx` | 날짜 범위 선택 |
+| `packages/database/src/queries/feedback.ts` | 필터 쿼리 함수 |
+
+---
+
+## PR 목록
+
+- PR #23: DatePicker 컴포넌트 추가
+- PR #24: 피드백 검색 및 필터 기능 (Closes #8)
