@@ -289,3 +289,143 @@ export async function updateFeedback(input: UpdateFeedbackInput): Promise<Feedba
 
   return queryReturning<Feedback>(sql, params);
 }
+
+// ============================================
+// 어드민용 필터링 + 페이지네이션
+// ============================================
+
+type OrderBy = "createdAt" | "priority";
+type Order = "asc" | "desc";
+
+interface GetFeedbacksFilteredOptions {
+  organizationId: string;
+  projectId?: string;
+  status?: FeedbackStatus;
+  type?: FeedbackType;
+  search?: string;
+  dateFrom?: string; // YYYY-MM-DD
+  dateTo?: string; // YYYY-MM-DD
+  orderBy?: OrderBy;
+  order?: Order;
+  page?: number;
+  limit?: number;
+}
+
+interface FilteredPaginatedResult {
+  data: FeedbackWithProject[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export async function getFeedbacksFiltered(
+  options: GetFeedbacksFilteredOptions
+): Promise<FilteredPaginatedResult> {
+  const {
+    organizationId,
+    projectId,
+    status,
+    type,
+    search,
+    dateFrom,
+    dateTo,
+    orderBy = "createdAt",
+    order = "desc",
+    page = 1,
+    limit = 20,
+  } = options;
+
+  // Build WHERE conditions
+  const conditions: string[] = ["p.organization_id = $1"];
+  const params: unknown[] = [organizationId];
+  let paramIndex = 2;
+
+  if (projectId) {
+    conditions.push(`f.project_id = $${paramIndex++}`);
+    params.push(projectId);
+  }
+
+  if (status) {
+    conditions.push(`f.status = $${paramIndex++}`);
+    params.push(status);
+  }
+
+  if (type) {
+    conditions.push(`f.type = $${paramIndex++}`);
+    params.push(type);
+  }
+
+  if (search) {
+    conditions.push(`(f.message ILIKE $${paramIndex} OR f.email ILIKE $${paramIndex})`);
+    params.push(`%${search}%`);
+    paramIndex++;
+  }
+
+  if (dateFrom) {
+    conditions.push(`f.created_at::date >= $${paramIndex++}::date`);
+    params.push(dateFrom);
+  }
+
+  if (dateTo) {
+    conditions.push(`f.created_at::date <= $${paramIndex++}::date`);
+    params.push(dateTo);
+  }
+
+  const whereClause = conditions.join(" AND ");
+
+  // Count query
+  const countSql = `
+    SELECT COUNT(*) as total
+    FROM feedback f
+    JOIN project p ON f.project_id = p.id
+    WHERE ${whereClause}
+  `;
+  const countResult = await queryOne<{ total: string }>(countSql, params);
+  const total = parseInt(countResult?.total || "0", 10);
+
+  // Build ORDER BY clause
+  let orderClause: string;
+  if (orderBy === "priority") {
+    orderClause = `f.priority ${order.toUpperCase()} NULLS LAST, f.created_at DESC`;
+  } else {
+    orderClause = `f.created_at ${order.toUpperCase()}`;
+  }
+
+  // Data query
+  const offset = (page - 1) * limit;
+
+  const dataSql = `
+    SELECT
+      f.id, f.type, f.message, f.email, f.status, f.priority, f.metadata,
+      f.project_id as "projectId", f.created_at as "createdAt", f.resolved_at as "resolvedAt",
+      json_build_object(
+        'id', p.id,
+        'name', p.name,
+        'allowedOrigins', p.allowed_origins,
+        'widgetConfig', p.widget_config,
+        'organizationId', p.organization_id,
+        'createdAt', p.created_at,
+        'updatedAt', p.updated_at
+      ) as project
+    FROM feedback f
+    JOIN project p ON f.project_id = p.id
+    WHERE ${whereClause}
+    ORDER BY ${orderClause}
+    LIMIT $${paramIndex++} OFFSET $${paramIndex}
+  `;
+
+  const data = await query<FeedbackWithProject>(dataSql, [...params, limit, offset]);
+
+  return {
+    data,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
