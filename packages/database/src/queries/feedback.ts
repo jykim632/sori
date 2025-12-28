@@ -22,7 +22,8 @@ export async function getFeedbacks(
   let sql = `
     SELECT
       f.id, f.type, f.message, f.email, f.status, f.priority, f.metadata,
-      f.project_id as "projectId", f.created_at as "createdAt", f.resolved_at as "resolvedAt",
+      f.project_id as "projectId", f.privacy_agreed_at as "privacyAgreedAt",
+      f.created_at as "createdAt", f.resolved_at as "resolvedAt",
       json_build_object(
         'id', p.id,
         'name', p.name,
@@ -105,7 +106,8 @@ export async function updateFeedbackStatus(
     WHERE id = $2
     RETURNING
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", created_at as "createdAt", resolved_at as "resolvedAt"
+      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      created_at as "createdAt", resolved_at as "resolvedAt"
   `;
 
   return queryReturning<Feedback>(sql, [status, id]);
@@ -184,7 +186,8 @@ export async function getFeedbacksWithPagination(
   const dataSql = `
     SELECT
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", created_at as "createdAt", resolved_at as "resolvedAt"
+      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      created_at as "createdAt", resolved_at as "resolvedAt"
     FROM feedback
     WHERE ${whereClause}
     ORDER BY ${orderColumn} ${order.toUpperCase()}
@@ -211,7 +214,8 @@ export async function getFeedbackWithReplies(
   const feedbackSql = `
     SELECT
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", created_at as "createdAt", resolved_at as "resolvedAt"
+      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      created_at as "createdAt", resolved_at as "resolvedAt"
     FROM feedback
     WHERE id = $1
   `;
@@ -271,7 +275,8 @@ export async function updateFeedback(input: UpdateFeedbackInput): Promise<Feedba
     // Nothing to update, return current feedback
     const current = await queryOne<Feedback>(
       `SELECT id, type, message, email, status, priority, metadata,
-       project_id as "projectId", created_at as "createdAt", resolved_at as "resolvedAt"
+       project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+       created_at as "createdAt", resolved_at as "resolvedAt"
        FROM feedback WHERE id = $1`,
       [id]
     );
@@ -287,7 +292,8 @@ export async function updateFeedback(input: UpdateFeedbackInput): Promise<Feedba
     WHERE id = $${paramIndex}
     RETURNING
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", created_at as "createdAt", resolved_at as "resolvedAt"
+      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      created_at as "createdAt", resolved_at as "resolvedAt"
   `;
 
   return queryReturning<Feedback>(sql, params);
@@ -403,7 +409,8 @@ export async function getFeedbacksFiltered(
   const dataSql = `
     SELECT
       f.id, f.type, f.message, f.email, f.status, f.priority, f.metadata,
-      f.project_id as "projectId", f.created_at as "createdAt", f.resolved_at as "resolvedAt",
+      f.project_id as "projectId", f.privacy_agreed_at as "privacyAgreedAt",
+      f.created_at as "createdAt", f.resolved_at as "resolvedAt",
       json_build_object(
         'id', p.id,
         'name', p.name,

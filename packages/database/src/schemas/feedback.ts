@@ -13,7 +13,7 @@ export const FeedbackSchema = z.object({
   email: z.string().email(),
   status: FeedbackStatusSchema,
   priority: PrioritySchema.nullable(),
-  metadata: z.record(z.unknown()).nullable(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
   projectId: z.string(),
   privacyAgreedAt: z.coerce.date(),
   createdAt: z.coerce.date(),
@@ -26,7 +26,7 @@ export const CreateFeedbackSchema = z.object({
   message: z.string().min(1).max(5000),
   email: z.string().email(),
   projectId: z.string(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // 상태 업데이트 스키마
