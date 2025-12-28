@@ -11,7 +11,7 @@ export const Route = createFileRoute("/organizations")({
       throw redirect({ to: "/login" });
     }
 
-    const organizations = await getUserOrganizations({ data: { userId: session.user.id } });
+    const organizations = await getUserOrganizations();
 
     return { session, organizations };
   },

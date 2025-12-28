@@ -65,11 +65,29 @@ export async function authenticateApiKey(request: Request): Promise<ApiAuthResul
 // 응답 헬퍼
 // ============================================
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+// 어드민 API용 CORS - 허용된 Origin만
+const ALLOWED_ADMIN_ORIGINS = [
+  "https://app.sori.life",
+  "https://sori.life",
+  // 개발 환경
+  ...(process.env.NODE_ENV === "development" ? ["http://localhost:3000"] : []),
+];
+
+function getAdminCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ADMIN_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ADMIN_ORIGINS[0];
+
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
+
+// 기본 CORS 헤더 (하위 호환성)
+const CORS_HEADERS = getAdminCorsHeaders(null);
 
 export function apiError(
   message: string,
