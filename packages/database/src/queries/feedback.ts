@@ -207,6 +207,20 @@ export async function getFeedbacksWithPagination(
   };
 }
 
+// 단일 피드백 조회
+export async function getFeedbackById(id: string): Promise<Feedback | null> {
+  const sql = `
+    SELECT
+      id, type, message, email, status, priority, metadata,
+      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      created_at as "createdAt", resolved_at as "resolvedAt"
+    FROM feedback
+    WHERE id = $1
+  `;
+
+  return queryOne<Feedback>(sql, [id]);
+}
+
 // 단일 피드백 조회 (with replies)
 export async function getFeedbackWithReplies(
   id: string

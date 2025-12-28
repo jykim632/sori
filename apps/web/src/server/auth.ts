@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { auth } from "@/lib/auth";
+import { getUserRoleInOrganization } from "@sori/database";
 
 export const getSession = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -21,3 +22,95 @@ export const requireAuth = createServerFn({ method: "GET" }).handler(
     return session;
   }
 );
+
+// ============================================
+// 권한 검증 헬퍼 (내부 사용)
+// ============================================
+
+/**
+ * 세션에서 userId 추출 (인증 필수)
+ * 클라이언트에서 userId를 전달받지 않고 세션에서 안전하게 추출
+ */
+export async function getSessionUserId(): Promise<string> {
+  const request = getRequest();
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  return session.user.id;
+}
+
+/**
+ * 조직 접근 권한 확인
+ * 현재 세션 사용자가 해당 조직의 멤버인지 확인
+ */
+export async function requireOrgMembership(organizationId: string): Promise<{
+  userId: string;
+  role: string;
+}> {
+  const userId = await getSessionUserId();
+  const role = await getUserRoleInOrganization(userId, organizationId);
+
+  if (!role) {
+    throw new Error("Forbidden: Not a member of this organization");
+  }
+
+  return { userId, role };
+}
+
+/**
+ * 조직 관리자 권한 확인 (OWNER 또는 ADMIN)
+ */
+export async function requireOrgAdmin(organizationId: string): Promise<{
+  userId: string;
+  role: string;
+}> {
+  const { userId, role } = await requireOrgMembership(organizationId);
+
+  if (role !== "OWNER" && role !== "ADMIN") {
+    throw new Error("Forbidden: Admin access required");
+  }
+
+  return { userId, role };
+}
+
+/**
+ * 프로젝트 접근 권한 확인
+ * 프로젝트가 속한 조직의 멤버인지 확인
+ */
+export async function requireProjectAccess(projectId: string): Promise<{
+  userId: string;
+  role: string;
+  organizationId: string;
+}> {
+  const { getProjectById } = await import("@sori/database");
+  const project = await getProjectById(projectId);
+
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
+  const { userId, role } = await requireOrgMembership(project.organizationId);
+  return { userId, role, organizationId: project.organizationId };
+}
+
+/**
+ * 프로젝트 관리자 권한 확인
+ */
+export async function requireProjectAdmin(projectId: string): Promise<{
+  userId: string;
+  role: string;
+  organizationId: string;
+}> {
+  const { getProjectById } = await import("@sori/database");
+  const project = await getProjectById(projectId);
+
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
+  const { userId, role } = await requireOrgAdmin(project.organizationId);
+  return { userId, role, organizationId: project.organizationId };
+}

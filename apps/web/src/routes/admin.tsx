@@ -74,7 +74,7 @@ export const Route = createFileRoute("/admin")({
       throw redirect({ to: "/login" });
     }
 
-    const organizations = await getUserOrganizations({ data: { userId: session.user.id } });
+    const organizations = await getUserOrganizations();
     if (organizations.length === 0) {
       throw redirect({ to: "/onboarding" });
     }
