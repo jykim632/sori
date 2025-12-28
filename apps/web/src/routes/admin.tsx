@@ -1,17 +1,38 @@
-import { createFileRoute, redirect, useRouter, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { getFeedbacks, updateFeedbackStatus } from "@/server/feedback";
+import { createFileRoute, redirect, useRouter, useRouterState, Link } from "@tanstack/react-router";
+import { useState, useEffect, useRef } from "react";
+import { getFeedbacksFiltered, updateFeedbackStatus } from "@/server/feedback";
 import { getProjects, createProject, deleteProject, updateProject } from "@/server/projects";
 import { getSession } from "@/server/auth";
 import { getUserOrganizations } from "@/server/organization";
 import { getWebhooks, createWebhook, updateWebhook, deleteWebhook, testWebhookById } from "@/server/webhook";
 import { createReply, getReplies, deleteReply as deleteReplyFn } from "@/server/reply";
 import { signOut } from "@/lib/auth-client";
-import { ChevronDown, Plus, MessageSquare, FolderOpen, Copy, Check, X, Building2, Settings, ExternalLink, Globe, Clock, Mail, Bug, HelpCircle, Lightbulb, Trash2, Send, ToggleLeft, ToggleRight, Palette, MessageCircle, Lock, AlertTriangle, Pencil } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Plus, MessageSquare, FolderOpen, Copy, Check, X, Building2, Settings, ExternalLink, Globe, Clock, Mail, Bug, HelpCircle, Lightbulb, Trash2, Send, ToggleLeft, ToggleRight, Palette, MessageCircle, Lock, AlertTriangle, Pencil, Search, ArrowUpDown } from "lucide-react";
+import { DateRangePicker } from "@/components/DateRangePicker";
+import type {
+  FeedbackStatus,
+  FeedbackType,
+  FeedbackWithProject,
+  Project,
+  Webhook,
+  Reply,
+} from "@sori/database";
+
+type OrderBy = "createdAt" | "priority";
+type Order = "asc" | "desc";
 
 type SearchParams = {
   org?: string;
   tab?: "feedbacks" | "projects" | "settings";
+  status?: FeedbackStatus;
+  type?: FeedbackType;
+  project?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  orderBy?: OrderBy;
+  order?: Order;
+  page?: number;
 };
 
 type FeedbackMetadata = {
@@ -19,43 +40,32 @@ type FeedbackMetadata = {
   userAgent?: string;
 };
 
-type Feedback = {
-  id: string;
-  type: string;
-  message: string;
-  email: string | null;
-  status: string;
-  metadata: FeedbackMetadata | null;
-  createdAt: Date;
-  project: { name: string } | null;
+type Pagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 };
 
-type Webhook = {
-  id: string;
-  name: string;
-  url: string;
-  type: "SLACK" | "DISCORD" | "TELEGRAM" | "CUSTOM";
-  enabled: boolean;
-  createdAt: Date;
-};
-
-type Reply = {
-  id: string;
-  content: string;
-  feedbackId: string;
-  authorId: string | null;
-  authorName: string | null;
-  authorType: "USER" | "ADMIN" | "API";
-  isInternal: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-};
+const validStatuses: FeedbackStatus[] = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
+const validTypes: FeedbackType[] = ["BUG", "INQUIRY", "FEATURE"];
+const validOrderBy: OrderBy[] = ["createdAt", "priority"];
+const validOrder: Order[] = ["asc", "desc"];
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
     org: typeof search.org === "string" ? search.org : undefined,
     tab: search.tab === "projects" ? "projects" : search.tab === "settings" ? "settings" : "feedbacks",
+    status: validStatuses.includes(search.status as FeedbackStatus) ? (search.status as FeedbackStatus) : undefined,
+    type: validTypes.includes(search.type as FeedbackType) ? (search.type as FeedbackType) : undefined,
+    project: typeof search.project === "string" ? search.project : undefined,
+    search: typeof search.search === "string" && search.search ? search.search : undefined,
+    dateFrom: typeof search.dateFrom === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search.dateFrom) ? search.dateFrom : undefined,
+    dateTo: typeof search.dateTo === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search.dateTo) ? search.dateTo : undefined,
+    orderBy: validOrderBy.includes(search.orderBy as OrderBy) ? (search.orderBy as OrderBy) : undefined,
+    order: validOrder.includes(search.order as Order) ? (search.order as Order) : undefined,
+    page: typeof search.page === "number" && search.page > 0 ? search.page : undefined,
   }),
   beforeLoad: async () => {
     const session = await getSession();
@@ -70,26 +80,96 @@ export const Route = createFileRoute("/admin")({
 
     return { session, organizations };
   },
-  loaderDeps: ({ search }) => ({ orgId: search.org }),
+  loaderDeps: ({ search }) => ({
+    orgId: search.org,
+    status: search.status,
+    type: search.type,
+    projectId: search.project,
+    search: search.search,
+    dateFrom: search.dateFrom,
+    dateTo: search.dateTo,
+    orderBy: search.orderBy,
+    order: search.order,
+    page: search.page,
+  }),
   loader: async ({ context, deps }) => {
     const selectedOrgId = deps.orgId || context.organizations[0].id;
     const currentOrg = context.organizations.find((o) => o.id === selectedOrgId) || context.organizations[0];
 
-    const [feedbacks, projects, webhooks] = await Promise.all([
-      getFeedbacks({ data: { organizationId: currentOrg.id } }),
+    const [feedbacksResult, projects, webhooks] = await Promise.all([
+      getFeedbacksFiltered({
+        data: {
+          organizationId: currentOrg.id,
+          status: deps.status,
+          type: deps.type,
+          projectId: deps.projectId,
+          search: deps.search,
+          dateFrom: deps.dateFrom,
+          dateTo: deps.dateTo,
+          orderBy: deps.orderBy,
+          order: deps.order,
+          page: deps.page || 1,
+          limit: 20,
+        },
+      }) as Promise<{ data: FeedbackWithProject[]; pagination: Pagination }>,
       getProjects({ data: { organizationId: currentOrg.id } }),
       getWebhooks({ data: { organizationId: currentOrg.id } }),
     ]);
 
-    return { feedbacks, projects, webhooks, currentOrg };
+    return {
+      feedbacks: feedbacksResult.data,
+      pagination: feedbacksResult.pagination,
+      projects,
+      webhooks,
+      currentOrg,
+    };
   },
 });
 
 function AdminPage() {
-  const { feedbacks, projects, webhooks, currentOrg } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData() as {
+    feedbacks: FeedbackWithProject[];
+    pagination: Pagination;
+    projects: Project[];
+    webhooks: Webhook[];
+    currentOrg: { id: string; name: string; slug: string; plan: string };
+  };
+  const { feedbacks, pagination, projects, webhooks, currentOrg } = loaderData;
   const { session, organizations } = Route.useRouteContext();
-  const { tab } = Route.useSearch();
+  const {
+    tab,
+    status: filterStatus,
+    type: filterType,
+    project: filterProject,
+    search: filterSearch,
+    dateFrom: filterDateFrom,
+    dateTo: filterDateTo,
+    orderBy: filterOrderBy,
+    order: filterOrder,
+    page: currentPage,
+  } = Route.useSearch();
   const router = useRouter();
+
+  // 검색 디바운스
+  const [searchInput, setSearchInput] = useState(filterSearch || "");
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Router 로딩 상태 (서버/클라이언트 모두 감지)
+  const isRouterLoading = useRouterState({ select: (s) => s.isLoading });
+
+  // Optimistic UI를 위한 pending 상태
+  const [pendingStatus, setPendingStatus] = useState<FeedbackStatus | undefined | null>(null);
+
+  useEffect(() => {
+    setSearchInput(filterSearch || "");
+  }, [filterSearch]);
+
+  // 로딩 완료 시 pending 상태 초기화
+  useEffect(() => {
+    if (!isRouterLoading) {
+      setPendingStatus(null);
+    }
+  }, [isRouterLoading, filterStatus]);
   const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -97,7 +177,7 @@ function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
-  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackWithProject | null>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -153,6 +233,64 @@ function AdminPage() {
   const handleTabChange = (newTab: "feedbacks" | "projects" | "settings") => {
     router.navigate({ to: "/admin", search: { org: currentOrg.id, tab: newTab } });
   };
+
+  const handleFilterChange = (updates: Partial<SearchParams>) => {
+    const hasStatusChange = "status" in updates;
+    const hasTypeChange = "type" in updates;
+    const hasProjectChange = "project" in updates;
+    const hasSearchChange = "search" in updates;
+    const hasDateFromChange = "dateFrom" in updates;
+    const hasDateToChange = "dateTo" in updates;
+    const hasOrderByChange = "orderBy" in updates;
+    const hasOrderChange = "order" in updates;
+    const hasPageChange = "page" in updates;
+
+    const isFilterChange = hasStatusChange || hasTypeChange || hasProjectChange || hasSearchChange || hasDateFromChange || hasDateToChange;
+
+    // 상태 필터 변경 시 즉시 UI 업데이트 (Optimistic UI)
+    if (hasStatusChange) {
+      setPendingStatus(updates.status);
+    }
+
+    router.navigate({
+      to: "/admin",
+      search: {
+        org: currentOrg.id,
+        tab,
+        status: hasStatusChange ? updates.status : filterStatus,
+        type: hasTypeChange ? updates.type : filterType,
+        project: hasProjectChange ? updates.project : filterProject,
+        search: hasSearchChange ? updates.search : filterSearch,
+        dateFrom: hasDateFromChange ? updates.dateFrom : filterDateFrom,
+        dateTo: hasDateToChange ? updates.dateTo : filterDateTo,
+        orderBy: hasOrderByChange ? updates.orderBy : filterOrderBy,
+        order: hasOrderChange ? updates.order : filterOrder,
+        page: hasPageChange ? updates.page : (isFilterChange ? undefined : currentPage),
+      },
+    });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      handleFilterChange({ search: value || undefined });
+    }, 300);
+  };
+
+  const handleClearFilters = () => {
+    setSearchInput("");
+    router.navigate({
+      to: "/admin",
+      search: { org: currentOrg.id, tab },
+    });
+  };
+
+  const hasActiveFilters = filterStatus || filterType || filterProject || filterSearch || filterDateFrom || filterDateTo;
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -316,11 +454,8 @@ function AdminPage() {
   };
 
   // Reply handlers
-  const handleOpenFeedbackModal = async (feedback: Feedback) => {
-    setSelectedFeedback({
-      ...feedback,
-      metadata: feedback.metadata as FeedbackMetadata | null,
-    });
+  const handleOpenFeedbackModal = async (feedback: FeedbackWithProject) => {
+    setSelectedFeedback(feedback);
     setReplies([]);
     setNewReplyContent("");
     setIsInternalReply(false);
@@ -509,7 +644,7 @@ function AdminPage() {
               }`}
             >
               <MessageSquare className="w-4 h-4" />
-              피드백 ({feedbacks.length})
+              피드백 ({pagination.total})
             </button>
             <button
               onClick={() => handleTabChange("projects")}
@@ -540,8 +675,231 @@ function AdminPage() {
       {/* Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {tab === "feedbacks" ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <table className="w-full text-left">
+          <div className="space-y-4">
+            {/* 검색 + 필터 바 */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* 검색 바 */}
+              <div className="px-4 py-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="메시지, 이메일로 검색..."
+                      value={searchInput}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    {searchInput && (
+                      <button
+                        onClick={() => handleSearchChange("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 날짜 범위 필터 */}
+                  <DateRangePicker
+                    startDate={filterDateFrom}
+                    endDate={filterDateTo}
+                    onChange={(start, end) => handleFilterChange({ dateFrom: start, dateTo: end })}
+                    placeholder="기간 선택"
+                  />
+
+                  {/* 상태 필터 */}
+                  {(() => {
+                    // pendingStatus가 있으면 그걸 사용 (Optimistic UI)
+                    const activeStatus = pendingStatus !== null ? pendingStatus : filterStatus;
+                    return (
+                      <div className="flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden">
+                        <button
+                          onClick={() => handleFilterChange({ status: undefined })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors ${
+                            !activeStatus
+                              ? "bg-indigo-50 text-indigo-600"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          전체
+                        </button>
+                        <button
+                          onClick={() => handleFilterChange({ status: "OPEN" })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
+                            activeStatus === "OPEN"
+                              ? "bg-yellow-50 text-yellow-700"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-yellow-400" />
+                          대기중
+                        </button>
+                        <button
+                          onClick={() => handleFilterChange({ status: "IN_PROGRESS" })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
+                            activeStatus === "IN_PROGRESS"
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-blue-400" />
+                          처리중
+                        </button>
+                        <button
+                          onClick={() => handleFilterChange({ status: "RESOLVED" })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
+                            activeStatus === "RESOLVED"
+                              ? "bg-green-50 text-green-700"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-green-400" />
+                          완료
+                        </button>
+                        <button
+                          onClick={() => handleFilterChange({ status: "CLOSED" })}
+                          className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
+                            activeStatus === "CLOSED"
+                              ? "bg-gray-100 text-gray-700"
+                              : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-gray-400" />
+                          닫힘
+                        </button>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 결과 수 */}
+                  <div className="ml-auto text-sm text-gray-400 flex items-center gap-2">
+                    {isRouterLoading && (
+                      <div className="w-3 h-3 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+                    )}
+                    {pagination.total}개
+                  </div>
+                </div>
+              </div>
+
+              {/* 추가 필터 */}
+              <div className="px-4 py-3 flex items-center gap-3 bg-gray-50/50">
+                {/* 유형 필터 */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 uppercase tracking-wide">유형</span>
+                  <div className="flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden">
+                    <button
+                      onClick={() => handleFilterChange({ type: undefined })}
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                        !filterType
+                          ? "bg-indigo-50 text-indigo-600"
+                          : "text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      전체
+                    </button>
+                    <button
+                      onClick={() => handleFilterChange({ type: "BUG" })}
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 border-l border-gray-200 ${
+                        filterType === "BUG"
+                          ? "bg-red-50 text-red-600"
+                          : "text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Bug className="w-3 h-3" />
+                      버그
+                    </button>
+                    <button
+                      onClick={() => handleFilterChange({ type: "INQUIRY" })}
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 border-l border-gray-200 ${
+                        filterType === "INQUIRY"
+                          ? "bg-blue-50 text-blue-600"
+                          : "text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      <HelpCircle className="w-3 h-3" />
+                      문의
+                    </button>
+                    <button
+                      onClick={() => handleFilterChange({ type: "FEATURE" })}
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 border-l border-gray-200 ${
+                        filterType === "FEATURE"
+                          ? "bg-purple-50 text-purple-600"
+                          : "text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Lightbulb className="w-3 h-3" />
+                      기능요청
+                    </button>
+                  </div>
+                </div>
+
+                {/* 구분선 */}
+                <div className="h-6 w-px bg-gray-200" />
+
+                {/* 프로젝트 필터 */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 uppercase tracking-wide">프로젝트</span>
+                  <select
+                    value={filterProject || ""}
+                    onChange={(e) => handleFilterChange({ project: e.target.value || undefined })}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors appearance-none pr-8 bg-no-repeat bg-[length:16px] bg-[center_right_8px] ${
+                      filterProject
+                        ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                    }`}
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")` }}
+                  >
+                    <option value="">전체</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 구분선 */}
+                <div className="h-6 w-px bg-gray-200" />
+
+                {/* 정렬 */}
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
+                  <select
+                    value={`${filterOrderBy || "createdAt"}-${filterOrder || "desc"}`}
+                    onChange={(e) => {
+                      const [orderBy, order] = e.target.value.split("-") as [OrderBy, Order];
+                      handleFilterChange({ orderBy, order });
+                    }}
+                    className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-gray-300 transition-colors appearance-none pr-7 bg-no-repeat bg-[length:14px] bg-[center_right_6px]"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")` }}
+                  >
+                    <option value="createdAt-desc">최신순</option>
+                    <option value="createdAt-asc">오래된순</option>
+                    <option value="priority-desc">우선순위 높은순</option>
+                    <option value="priority-asc">우선순위 낮은순</option>
+                  </select>
+                </div>
+
+                {/* 필터 초기화 */}
+                {hasActiveFilters && (
+                  <>
+                    <div className="h-6 w-px bg-gray-200" />
+                    <button
+                      onClick={handleClearFilters}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      필터 초기화
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* 피드백 테이블 */}
+            <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-opacity ${isRouterLoading ? "opacity-60" : ""}`}>
+              <table className="w-full text-left">
               <thead className="bg-gray-50 text-gray-500 text-sm font-medium">
                 <tr>
                   <th className="p-4">상태</th>
@@ -603,12 +961,68 @@ function AdminPage() {
                 {feedbacks.length === 0 && (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-gray-400">
-                      피드백이 없습니다.
+                      {hasActiveFilters ? "필터 조건에 맞는 피드백이 없습니다." : "피드백이 없습니다."}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+            </div>
+
+            {/* 페이지네이션 */}
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3">
+                <div className="text-sm text-gray-500">
+                  {pagination.total}개 중 {(pagination.page - 1) * pagination.limit + 1}-
+                  {Math.min(pagination.page * pagination.limit, pagination.total)}개 표시
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleFilterChange({ page: pagination.page - 1 })}
+                    disabled={pagination.page <= 1}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    이전
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1;
+                      } else if (pagination.page >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i;
+                      } else {
+                        pageNum = pagination.page - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handleFilterChange({ page: pageNum })}
+                          className={`w-8 h-8 text-sm rounded-lg transition-colors ${
+                            pagination.page === pageNum
+                              ? "bg-indigo-600 text-white"
+                              : "hover:bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => handleFilterChange({ page: pagination.page + 1 })}
+                    disabled={pagination.page >= pagination.totalPages}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    다음
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : tab === "projects" ? (
           <div className="space-y-6">
@@ -1035,38 +1449,41 @@ function AdminPage() {
               </div>
 
               {/* Metadata */}
-              {selectedFeedback.metadata && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">메타데이터</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
-                    {selectedFeedback.metadata.url && (
-                      <div className="flex items-start gap-2">
-                        <Globe className="w-4 h-4 text-gray-400 mt-0.5" />
-                        <div>
-                          <span className="text-gray-500">URL: </span>
-                          <a
-                            href={selectedFeedback.metadata.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-indigo-600 hover:underline break-all"
-                          >
-                            {selectedFeedback.metadata.url}
-                            <ExternalLink className="w-3 h-3 inline ml-1" />
-                          </a>
+              {selectedFeedback.metadata && (() => {
+                const metadata = selectedFeedback.metadata as FeedbackMetadata;
+                return (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-2">메타데이터</h3>
+                    <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
+                      {metadata.url && (
+                        <div className="flex items-start gap-2">
+                          <Globe className="w-4 h-4 text-gray-400 mt-0.5" />
+                          <div>
+                            <span className="text-gray-500">URL: </span>
+                            <a
+                              href={metadata.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:underline break-all"
+                            >
+                              {metadata.url}
+                              <ExternalLink className="w-3 h-3 inline ml-1" />
+                            </a>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {selectedFeedback.metadata.userAgent && (
-                      <div className="flex items-start gap-2">
-                        <span className="text-gray-500">User Agent: </span>
-                        <span className="text-gray-700 break-all">
-                          {selectedFeedback.metadata.userAgent}
-                        </span>
-                      </div>
-                    )}
+                      )}
+                      {metadata.userAgent && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-500">User Agent: </span>
+                          <span className="text-gray-700 break-all">
+                            {metadata.userAgent}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Replies Section */}
               <div>
