@@ -3,7 +3,7 @@ import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
 import { Mail, RefreshCw } from "lucide-react";
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/(auth)/login")({
   component: LoginPage,
 });
 

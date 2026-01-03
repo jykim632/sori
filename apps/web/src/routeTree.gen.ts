@@ -9,13 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OrganizationsRouteImport } from './routes/organizations'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,6 +19,10 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminProjectsRouteImport } from './routes/admin/projects'
 import { Route as AdminFeedbacksRouteImport } from './routes/admin/feedbacks'
+import { Route as authVerifyEmailRouteImport } from './routes/(auth)/verify-email'
+import { Route as authSignupRouteImport } from './routes/(auth)/signup'
+import { Route as authOnboardingRouteImport } from './routes/(auth)/onboarding'
+import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as ApiV1WidgetRouteImport } from './routes/api/v1/widget'
 import { Route as ApiV1FeedbacksRouteImport } from './routes/api/v1/feedbacks'
 import { Route as ApiV1FeedbackRouteImport } from './routes/api/v1/feedback'
@@ -32,19 +32,9 @@ import { Route as ApiV1FeedbacksFeedbackIdRouteImport } from './routes/api/v1/fe
 import { Route as ApiV1FeedbacksFeedbackIdRepliesRouteImport } from './routes/api/v1/feedbacks.$feedbackId.replies'
 import { Route as ApiV1FeedbacksFeedbackIdRepliesReplyIdRouteImport } from './routes/api/v1/feedbacks.$feedbackId.replies.$replyId'
 
-const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -55,16 +45,6 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const OrganizationsRoute = OrganizationsRouteImport.update({
   id: '/organizations',
   path: '/organizations',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuideRoute = GuideRouteImport.update({
@@ -101,6 +81,26 @@ const AdminFeedbacksRoute = AdminFeedbacksRouteImport.update({
   id: '/feedbacks',
   path: '/feedbacks',
   getParentRoute: () => AdminRoute,
+} as any)
+const authVerifyEmailRoute = authVerifyEmailRouteImport.update({
+  id: '/(auth)/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authSignupRoute = authSignupRouteImport.update({
+  id: '/(auth)/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authOnboardingRoute = authOnboardingRouteImport.update({
+  id: '/(auth)/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authLoginRoute = authLoginRouteImport.update({
+  id: '/(auth)/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1WidgetRoute = ApiV1WidgetRouteImport.update({
   id: '/api/v1/widget',
@@ -150,13 +150,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/guide': typeof GuideRoute
-  '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
   '/organizations': typeof OrganizationsRoute
   '/privacy': typeof PrivacyRoute
-  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
-  '/verify-email': typeof VerifyEmailRoute
+  '/login': typeof authLoginRoute
+  '/onboarding': typeof authOnboardingRoute
+  '/signup': typeof authSignupRoute
+  '/verify-email': typeof authVerifyEmailRoute
   '/admin/feedbacks': typeof AdminFeedbacksRoute
   '/admin/projects': typeof AdminProjectsRouteWithChildren
   '/admin/settings': typeof AdminSettingsRoute
@@ -173,13 +173,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/guide': typeof GuideRoute
-  '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
   '/organizations': typeof OrganizationsRoute
   '/privacy': typeof PrivacyRoute
-  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
-  '/verify-email': typeof VerifyEmailRoute
+  '/login': typeof authLoginRoute
+  '/onboarding': typeof authOnboardingRoute
+  '/signup': typeof authSignupRoute
+  '/verify-email': typeof authVerifyEmailRoute
   '/admin/feedbacks': typeof AdminFeedbacksRoute
   '/admin/projects': typeof AdminProjectsRouteWithChildren
   '/admin/settings': typeof AdminSettingsRoute
@@ -198,13 +198,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/guide': typeof GuideRoute
-  '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
   '/organizations': typeof OrganizationsRoute
   '/privacy': typeof PrivacyRoute
-  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
-  '/verify-email': typeof VerifyEmailRoute
+  '/(auth)/login': typeof authLoginRoute
+  '/(auth)/onboarding': typeof authOnboardingRoute
+  '/(auth)/signup': typeof authSignupRoute
+  '/(auth)/verify-email': typeof authVerifyEmailRoute
   '/admin/feedbacks': typeof AdminFeedbacksRoute
   '/admin/projects': typeof AdminProjectsRouteWithChildren
   '/admin/settings': typeof AdminSettingsRoute
@@ -224,12 +224,12 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/guide'
-    | '/login'
-    | '/onboarding'
     | '/organizations'
     | '/privacy'
-    | '/signup'
     | '/terms'
+    | '/login'
+    | '/onboarding'
+    | '/signup'
     | '/verify-email'
     | '/admin/feedbacks'
     | '/admin/projects'
@@ -247,12 +247,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/guide'
-    | '/login'
-    | '/onboarding'
     | '/organizations'
     | '/privacy'
-    | '/signup'
     | '/terms'
+    | '/login'
+    | '/onboarding'
+    | '/signup'
     | '/verify-email'
     | '/admin/feedbacks'
     | '/admin/projects'
@@ -271,13 +271,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/guide'
-    | '/login'
-    | '/onboarding'
     | '/organizations'
     | '/privacy'
-    | '/signup'
     | '/terms'
-    | '/verify-email'
+    | '/(auth)/login'
+    | '/(auth)/onboarding'
+    | '/(auth)/signup'
+    | '/(auth)/verify-email'
     | '/admin/feedbacks'
     | '/admin/projects'
     | '/admin/settings'
@@ -296,13 +296,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   GuideRoute: typeof GuideRoute
-  LoginRoute: typeof LoginRoute
-  OnboardingRoute: typeof OnboardingRoute
   OrganizationsRoute: typeof OrganizationsRoute
   PrivacyRoute: typeof PrivacyRoute
-  SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
-  VerifyEmailRoute: typeof VerifyEmailRoute
+  authLoginRoute: typeof authLoginRoute
+  authOnboardingRoute: typeof authOnboardingRoute
+  authSignupRoute: typeof authSignupRoute
+  authVerifyEmailRoute: typeof authVerifyEmailRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiV1FeedbackRoute: typeof ApiV1FeedbackRoute
   ApiV1FeedbacksRoute: typeof ApiV1FeedbacksRouteWithChildren
@@ -311,25 +311,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/terms': {
       id: '/terms'
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -344,20 +330,6 @@ declare module '@tanstack/react-router' {
       path: '/organizations'
       fullPath: '/organizations'
       preLoaderRoute: typeof OrganizationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guide': {
@@ -408,6 +380,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/feedbacks'
       preLoaderRoute: typeof AdminFeedbacksRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/(auth)/verify-email': {
+      id: '/(auth)/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof authVerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/signup': {
+      id: '/(auth)/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof authSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/onboarding': {
+      id: '/(auth)/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof authOnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/login': {
+      id: '/(auth)/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof authLoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/v1/widget': {
       id: '/api/v1/widget'
@@ -542,13 +542,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   GuideRoute: GuideRoute,
-  LoginRoute: LoginRoute,
-  OnboardingRoute: OnboardingRoute,
   OrganizationsRoute: OrganizationsRoute,
   PrivacyRoute: PrivacyRoute,
-  SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
-  VerifyEmailRoute: VerifyEmailRoute,
+  authLoginRoute: authLoginRoute,
+  authOnboardingRoute: authOnboardingRoute,
+  authSignupRoute: authSignupRoute,
+  authVerifyEmailRoute: authVerifyEmailRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiV1FeedbackRoute: ApiV1FeedbackRoute,
   ApiV1FeedbacksRoute: ApiV1FeedbacksRouteWithChildren,

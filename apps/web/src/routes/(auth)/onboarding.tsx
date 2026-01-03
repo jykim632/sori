@@ -4,7 +4,7 @@ import { getSession } from "@/server/auth";
 import { createOrganization, getUserOrganizations } from "@/server/organization";
 import { ArrowLeft } from "lucide-react";
 
-export const Route = createFileRoute("/onboarding")({
+export const Route = createFileRoute("/(auth)/onboarding")({
   component: OnboardingPage,
   beforeLoad: async () => {
     const session = await getSession();
