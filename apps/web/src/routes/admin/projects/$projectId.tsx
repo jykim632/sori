@@ -73,8 +73,22 @@ const THEME_PRESETS: Record<ThemePreset, ThemeStyles> = {
   },
 };
 
+type ProjectType = {
+  id: string;
+  name: string;
+  allowedOrigins: string[];
+  widgetConfig: WidgetConfig | null;
+  apiKey: string | null;
+  organizationId: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export const Route = createFileRoute("/admin/projects/$projectId")({
   component: ProjectSettingsPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    org: typeof search.org === "string" ? search.org : undefined,
+  }),
   beforeLoad: async () => {
     const session = await getSession();
     if (!session) {
@@ -82,10 +96,13 @@ export const Route = createFileRoute("/admin/projects/$projectId")({
     }
     return { session };
   },
-  loader: async ({ params }) => {
-    const project = await getProjectById({ data: { id: params.projectId } });
+  loaderDeps: ({ search }) => ({
+    org: search.org,
+  }),
+  loader: async ({ params, deps }) => {
+    const project = await getProjectById({ data: { id: params.projectId } }) as ProjectType | null;
     if (!project) {
-      throw redirect({ to: "/admin" });
+      throw redirect({ to: "/admin/projects", search: { org: deps.org } });
     }
     return { project };
   },
@@ -93,6 +110,7 @@ export const Route = createFileRoute("/admin/projects/$projectId")({
 
 function ProjectSettingsPage() {
   const { project } = Route.useLoaderData();
+  const { org } = Route.useSearch();
   const router = useRouter();
 
   // Initialize config from project or default
@@ -200,7 +218,7 @@ function ProjectSettingsPage() {
     setDeleting(true);
     try {
       await deleteProject({ data: { id: project.id } });
-      router.navigate({ to: "/admin", search: { tab: "projects" } });
+      router.navigate({ to: "/admin/projects", search: { org } });
     } catch (error) {
       console.error("Failed to delete project:", error);
       alert("프로젝트 삭제에 실패했습니다.");
@@ -267,8 +285,8 @@ function ProjectSettingsPage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <Link
-                to="/admin"
-                search={{ tab: "projects" }}
+                to="/admin/projects"
+                search={{ org }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
