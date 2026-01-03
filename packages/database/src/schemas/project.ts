@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { JsonValueSchema } from "./json.ts";
 
 // Project
 export const ProjectSchema = z.object({
   id: z.string(),
   name: z.string(),
   allowedOrigins: z.array(z.string()),
-  widgetConfig: z.record(z.unknown()).nullable(),
+  widgetConfig: z.record(z.string(), JsonValueSchema).nullable(),
   organizationId: z.string(),
   apiKey: z.string().nullable(),
   apiKeyCreatedAt: z.coerce.date().nullable(),
@@ -23,5 +24,5 @@ export const CreateProjectSchema = z.object({
 export const UpdateProjectSchema = z.object({
   name: z.string().min(1).optional(),
   allowedOrigins: z.array(z.string()).optional(),
-  widgetConfig: z.record(z.unknown()).nullable().optional(),
+  widgetConfig: z.record(z.string(), JsonValueSchema).nullable().optional(),
 });

@@ -49,6 +49,8 @@ CREATE TABLE "user" (
   "email_verified" BOOLEAN NOT NULL DEFAULT false,
   "name" TEXT,
   "image" TEXT,
+  "terms_agreed_at" TIMESTAMPTZ,
+  "privacy_agreed_at" TIMESTAMPTZ,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -136,11 +138,12 @@ CREATE TABLE "feedback" (
   "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   "type" "feedback_type" NOT NULL,
   "message" TEXT NOT NULL,
-  "email" TEXT,
+  "email" TEXT NOT NULL,
   "status" "feedback_status" NOT NULL DEFAULT 'OPEN',
   "priority" "priority",
   "metadata" JSONB,
   "project_id" TEXT NOT NULL REFERENCES "project"("id") ON DELETE CASCADE,
+  "privacy_agreed_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
   "resolved_at" TIMESTAMPTZ
 );
@@ -204,6 +207,8 @@ CREATE INDEX "webhook_org_id_idx" ON "webhook"("organization_id");
 | email_verified | BOOLEAN | 이메일 인증 여부 |
 | name | TEXT | 이름 |
 | image | TEXT | 프로필 이미지 URL |
+| terms_agreed_at | TIMESTAMPTZ | 이용약관 동의 시점 |
+| privacy_agreed_at | TIMESTAMPTZ | 개인정보처리방침 동의 시점 |
 | created_at | TIMESTAMPTZ | 생성일 |
 | updated_at | TIMESTAMPTZ | 수정일 |
 
@@ -294,11 +299,12 @@ OAuth 계정 연결.
 | id | TEXT (PK) | 피드백 ID |
 | type | feedback_type | 피드백 유형 |
 | message | TEXT | 내용 |
-| email | TEXT | 제출자 이메일 |
+| email | TEXT (NOT NULL) | 제출자 이메일 (필수) |
 | status | feedback_status | 상태 |
 | priority | priority | 우선순위 |
 | metadata | JSONB | 메타데이터 (브라우저 정보 등) |
 | project_id | TEXT (FK) | 프로젝트 ID |
+| privacy_agreed_at | TIMESTAMPTZ | 개인정보처리방침 동의 시점 |
 | resolved_at | TIMESTAMPTZ | 해결 시간 |
 
 ### reply

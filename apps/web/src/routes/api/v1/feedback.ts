@@ -47,15 +47,33 @@ function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
   });
 }
 
+// CORS 헤더 생성 (동적 Origin)
+function getCorsHeaders(origin: string | null, allowedOrigins: string[]): Record<string, string> {
+  // Origin이 허용 목록에 있으면 해당 Origin 반환, 아니면 첫 번째 허용 Origin
+  const allowedOrigin = origin && isOriginAllowed(origin, allowedOrigins)
+    ? origin
+    : allowedOrigins[0] || "";
+
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Project-Id",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
+
+// 프로젝트 조회 전 사용하는 기본 CORS (에러 응답용)
+const DEFAULT_CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, X-Project-Id",
+};
+
 export const Route = createFileRoute("/api/v1/feedback")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const corsHeaders = {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, X-Project-Id",
-        };
+        const origin = request.headers.get("origin");
 
         try {
           // Rate limiting
@@ -69,7 +87,7 @@ export const Route = createFileRoute("/api/v1/feedback")({
               JSON.stringify({ error: "Too many requests" }),
               {
                 status: 429,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
+                headers: { "Content-Type": "application/json", ...DEFAULT_CORS_HEADERS },
               }
             );
           }
@@ -79,13 +97,13 @@ export const Route = createFileRoute("/api/v1/feedback")({
           // Support both header and body for projectId
           const projectId = request.headers.get("X-Project-Id") || body.projectId;
 
-          // Validate required fields
-          if (!projectId || !type || !message) {
+          // Validate required fields (email is now required)
+          if (!projectId || !type || !message || !email) {
             return new Response(
-              JSON.stringify({ error: "Missing required fields" }),
+              JSON.stringify({ error: "Missing required fields (projectId, type, message, email are required)" }),
               {
                 status: 400,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
+                headers: { "Content-Type": "application/json", ...DEFAULT_CORS_HEADERS },
               }
             );
           }
@@ -96,7 +114,7 @@ export const Route = createFileRoute("/api/v1/feedback")({
               JSON.stringify({ error: "Invalid feedback type" }),
               {
                 status: 400,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
+                headers: { "Content-Type": "application/json", ...DEFAULT_CORS_HEADERS },
               }
             );
           }
@@ -107,18 +125,18 @@ export const Route = createFileRoute("/api/v1/feedback")({
               JSON.stringify({ error: "Message too long" }),
               {
                 status: 400,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
+                headers: { "Content-Type": "application/json", ...DEFAULT_CORS_HEADERS },
               }
             );
           }
 
-          // Validate email format if provided
-          if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          // Validate email format (email is required)
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return new Response(
               JSON.stringify({ error: "Invalid email format" }),
               {
                 status: 400,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
+                headers: { "Content-Type": "application/json", ...DEFAULT_CORS_HEADERS },
               }
             );
           }
@@ -131,13 +149,15 @@ export const Route = createFileRoute("/api/v1/feedback")({
               JSON.stringify({ error: "Project not found" }),
               {
                 status: 404,
-                headers: { "Content-Type": "application/json", ...corsHeaders },
+                headers: { "Content-Type": "application/json", ...DEFAULT_CORS_HEADERS },
               }
             );
           }
 
+          // 프로젝트 조회 후 동적 CORS 헤더 생성
+          const corsHeaders = getCorsHeaders(origin, project.allowedOrigins);
+
           // Check origin
-          const origin = request.headers.get("origin");
           if (origin && !isOriginAllowed(origin, project.allowedOrigins)) {
             return new Response(
               JSON.stringify({ error: "Origin not allowed" }),
@@ -148,13 +168,14 @@ export const Route = createFileRoute("/api/v1/feedback")({
             );
           }
 
-          // Create feedback
+          // Create feedback with privacy consent timestamp
           const feedback = await createFeedback({
             type: type as FeedbackType,
             message,
-            email: email || null,
+            email,
             metadata: metadata || null,
             projectId,
+            privacyAgreedAt: new Date(),
           });
 
           // Send webhooks (fire and forget)
@@ -176,27 +197,79 @@ export const Route = createFileRoute("/api/v1/feedback")({
             JSON.stringify({ error: "Internal server error" }),
             {
               status: 500,
-              headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-              },
+              headers: { "Content-Type": "application/json", ...DEFAULT_CORS_HEADERS },
             }
           );
         }
       },
-      OPTIONS: async () => {
-        return new Response(null, {
-          status: 204,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, X-Project-Id",
-          },
-        });
+      OPTIONS: async ({ request }) => {
+        // OPTIONS는 projectId를 body에서 읽을 수 없으므로 헤더에서만 확인
+        const projectId = request.headers.get("X-Project-Id");
+
+        if (projectId) {
+          const project = await getProjectWithWebhooks(projectId);
+          if (project) {
+            const origin = request.headers.get("origin");
+            const corsHeaders = getCorsHeaders(origin, project.allowedOrigins);
+            return new Response(null, { status: 204, headers: corsHeaders });
+          }
+        }
+
+        // projectId 없거나 프로젝트 없으면 기본 CORS
+        return new Response(null, { status: 204, headers: DEFAULT_CORS_HEADERS });
       },
     },
   },
 });
+
+// ============================================
+// Webhook 보안
+// ============================================
+
+// 허용된 Webhook 호스트 (SSRF 방지)
+const ALLOWED_WEBHOOK_HOSTS = [
+  "hooks.slack.com",
+  "discord.com",
+  "discordapp.com",
+  "api.telegram.org",
+];
+
+// 차단할 호스트 패턴 (내부 네트워크)
+const BLOCKED_HOST_PATTERNS = [
+  /^localhost$/i,
+  /^127\.\d+\.\d+\.\d+$/,
+  /^10\.\d+\.\d+\.\d+$/,
+  /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/,
+  /^192\.168\.\d+\.\d+$/,
+  /^0\.0\.0\.0$/,
+  /^::1$/,
+  /^\[::1\]$/,
+];
+
+function isWebhookUrlAllowed(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+
+    // HTTPS만 허용 (CUSTOM 타입 제외하고)
+    if (parsed.protocol !== "https:") {
+      return false;
+    }
+
+    // 내부 네트워크 차단
+    if (BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(parsed.hostname))) {
+      return false;
+    }
+
+    // 허용된 호스트 또는 CUSTOM 타입이면 통과
+    const isAllowedHost = ALLOWED_WEBHOOK_HOSTS.some(
+      (host) => parsed.hostname === host || parsed.hostname.endsWith("." + host)
+    );
+
+    return isAllowedHost || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 // Webhook sending
 async function sendWebhook(
@@ -204,6 +277,12 @@ async function sendWebhook(
   feedback: { type: string; message: string; email: string | null },
   projectName: string
 ) {
+  // URL 검증
+  if (!isWebhookUrlAllowed(webhook.url)) {
+    console.warn(`Blocked webhook URL: ${webhook.url}`);
+    return;
+  }
+
   const typeLabels: Record<string, string> = {
     BUG: "Bug Report",
     INQUIRY: "Question",
@@ -256,9 +335,11 @@ async function sendWebhook(
     };
   }
 
+  // 타임아웃 5초
   await fetch(webhook.url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(5000),
   });
 }

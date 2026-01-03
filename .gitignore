@@ -9,7 +9,7 @@ dist/
 .tanstack/
 
 # Environment
-.env
+.env*
 .env.local
 .env.*.local
 
@@ -34,3 +34,4 @@ coverage/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+packages/database/src/scripts/

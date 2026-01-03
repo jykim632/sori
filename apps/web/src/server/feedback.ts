@@ -4,13 +4,27 @@ import {
   getFeedbacksFiltered as getFeedbacksFilteredQuery,
   createFeedback as createFeedbackQuery,
   updateFeedbackStatus as updateFeedbackStatusQuery,
+  getFeedbackById,
   type FeedbackType,
   type FeedbackStatus,
 } from "@sori/database";
+import { requireOrgMembership, requireProjectAccess } from "./auth-helpers";
+
+// ============================================
+// 피드백 조회 (멤버십 필요)
+// ============================================
 
 export const getFeedbacks = createServerFn({ method: "GET" })
   .inputValidator((d: { projectId?: string; organizationId?: string }) => d)
   .handler(async ({ data }) => {
+    // organizationId가 있으면 조직 멤버십 확인
+    if (data?.organizationId) {
+      await requireOrgMembership(data.organizationId);
+    }
+    // projectId가 있으면 프로젝트 접근 권한 확인
+    if (data?.projectId) {
+      await requireProjectAccess(data.projectId);
+    }
     return await getFeedbacksQuery({
       projectId: data?.projectId,
       organizationId: data?.organizationId,
@@ -37,6 +51,9 @@ export const getFeedbacksFiltered = createServerFn({ method: "GET" })
     }) => d
   )
   .handler(async ({ data }) => {
+    // 조직 멤버십 확인
+    await requireOrgMembership(data.organizationId);
+
     return await getFeedbacksFilteredQuery({
       organizationId: data.organizationId,
       projectId: data.projectId,
@@ -52,12 +69,16 @@ export const getFeedbacksFiltered = createServerFn({ method: "GET" })
     });
   });
 
+// ============================================
+// 피드백 생성 (어드민용 - 멤버십 필요)
+// ============================================
+
 export const createFeedback = createServerFn({ method: "POST" })
   .inputValidator(
     (d: {
       message: string;
       type: FeedbackType;
-      email?: string;
+      email: string;
       projectId: string;
       metadata?: Record<string, unknown>;
     }) => d
@@ -65,22 +86,37 @@ export const createFeedback = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { message, type, email, projectId, metadata } = data;
 
-    if (!message || !type || !projectId) {
+    // 프로젝트 접근 권한 확인
+    await requireProjectAccess(projectId);
+
+    if (!message || !type || !projectId || !email) {
       throw new Error("Missing required fields");
     }
 
     return await createFeedbackQuery({
       message,
       type,
-      email: email || null,
+      email,
       projectId,
       metadata: metadata || null,
+      privacyAgreedAt: new Date(),
     });
   });
+
+// ============================================
+// 피드백 상태 변경 (멤버십 필요)
+// ============================================
 
 export const updateFeedbackStatus = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; status: FeedbackStatus }) => d)
   .handler(async ({ data }) => {
+    // 피드백 조회 후 프로젝트 접근 권한 확인
+    const feedback = await getFeedbackById(data.id);
+    if (!feedback) {
+      throw new Error("Feedback not found");
+    }
+    await requireProjectAccess(feedback.projectId);
+
     return await updateFeedbackStatusQuery({
       id: data.id,
       status: data.status,

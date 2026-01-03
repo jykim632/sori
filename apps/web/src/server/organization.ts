@@ -8,11 +8,17 @@ import {
   updateOrganizationWebhook as updateOrganizationWebhookQuery,
   getOrganizationBySlug,
 } from "@sori/database";
+import { getSessionUserId, requireOrgMembership, requireOrgAdmin } from "./auth-helpers";
 
+// ============================================
+// 조직 생성 (인증 필요)
+// ============================================
 export const createOrganization = createServerFn({ method: "POST" })
-  .inputValidator((d: { name: string; slug: string; userId: string }) => d)
+  .inputValidator((d: { name: string; slug: string }) => d)
   .handler(async ({ data }) => {
-    const { name, slug, userId } = data;
+    // 세션에서 userId 추출 (클라이언트에서 받지 않음)
+    const userId = await getSessionUserId();
+    const { name, slug } = data;
 
     // Check if slug is already taken
     const existing = await getOrganizationBySlug(slug);
@@ -25,11 +31,16 @@ export const createOrganization = createServerFn({ method: "POST" })
     return await createOrganizationQuery({ name, slug, userId });
   });
 
+// ============================================
+// 조직 조회 (인증 필요)
+// ============================================
+
 // Get all organizations the user belongs to
 export const getUserOrganizations = createServerFn({ method: "GET" })
-  .inputValidator((d: { userId: string }) => d)
-  .handler(async ({ data }) => {
-    const memberships = await getUserOrganizationsQuery(data.userId);
+  .handler(async () => {
+    // 세션에서 userId 추출
+    const userId = await getSessionUserId();
+    const memberships = await getUserOrganizationsQuery(userId);
 
     return memberships.map((m) => ({
       ...m.organization,
@@ -39,29 +50,40 @@ export const getUserOrganizations = createServerFn({ method: "GET" })
 
 // Get first organization (for backward compatibility)
 export const getUserOrganization = createServerFn({ method: "GET" })
-  .inputValidator((d: { userId: string }) => d)
-  .handler(async ({ data }) => {
-    return await getUserOrganizationQuery(data.userId);
+  .handler(async () => {
+    const userId = await getSessionUserId();
+    return await getUserOrganizationQuery(userId);
   });
 
+// Get organization with projects (멤버십 확인)
 export const getOrganizationWithProjects = createServerFn({ method: "GET" })
   .inputValidator((d: { organizationId: string }) => d)
   .handler(async ({ data }) => {
+    // 해당 조직의 멤버인지 확인
+    await requireOrgMembership(data.organizationId);
     return await getOrganizationWithProjectsQuery(data.organizationId);
   });
 
 // Get user's role in a specific organization
 export const getUserRoleInOrganization = createServerFn({ method: "GET" })
-  .inputValidator((d: { userId: string; organizationId: string }) => d)
+  .inputValidator((d: { organizationId: string }) => d)
   .handler(async ({ data }) => {
-    return await getUserRoleInOrganizationQuery(data.userId, data.organizationId);
+    const userId = await getSessionUserId();
+    return await getUserRoleInOrganizationQuery(userId, data.organizationId);
   });
+
+// ============================================
+// 조직 수정 (관리자 권한 필요)
+// ============================================
 
 // Update organization webhook URL
 export const updateOrganizationWebhook = createServerFn({ method: "POST" })
   .inputValidator((d: { organizationId: string; webhookUrl: string | null }) => d)
   .handler(async ({ data }) => {
     const { organizationId, webhookUrl } = data;
+
+    // 관리자 권한 확인
+    await requireOrgAdmin(organizationId);
 
     // Validate URL if provided
     if (webhookUrl) {
@@ -191,6 +213,9 @@ export const testWebhook = createServerFn({ method: "POST" })
     }) => d
   )
   .handler(async ({ data }) => {
+    // 해당 조직의 멤버인지 확인
+    await requireOrgMembership(data.organizationId);
+
     const { webhookUrl, organizationId, organizationName, projectId, projectName } = data;
 
     const testFeedback = {

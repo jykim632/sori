@@ -8,6 +8,16 @@ import {
   regenerateProjectApiKey as regenerateApiKeyQuery,
   revokeProjectApiKey as revokeApiKeyQuery,
 } from "@sori/database";
+import {
+  requireOrgMembership,
+  requireOrgAdmin,
+  requireProjectAccess,
+  requireProjectAdmin,
+} from "./auth-helpers";
+
+// ============================================
+// 프로젝트 조회 (멤버십 필요)
+// ============================================
 
 export const getProjects = createServerFn({ method: "GET" })
   .inputValidator((d: { organizationId?: string }) => d)
@@ -15,8 +25,22 @@ export const getProjects = createServerFn({ method: "GET" })
     if (!data?.organizationId) {
       return [];
     }
+    // 조직 멤버십 확인
+    await requireOrgMembership(data.organizationId);
     return await getProjectsQuery(data.organizationId);
   });
+
+export const getProjectById = createServerFn({ method: "GET" })
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data }) => {
+    // 프로젝트 접근 권한 확인
+    await requireProjectAccess(data.id);
+    return await getProjectByIdQuery(data.id);
+  });
+
+// ============================================
+// 프로젝트 생성/수정/삭제 (관리자 필요)
+// ============================================
 
 export const createProject = createServerFn({ method: "POST" })
   .inputValidator(
@@ -27,17 +51,13 @@ export const createProject = createServerFn({ method: "POST" })
     }) => d
   )
   .handler(async ({ data }) => {
+    // 조직 관리자 권한 확인
+    await requireOrgAdmin(data.organizationId);
     return await createProjectQuery({
       name: data.name,
       organizationId: data.organizationId,
       allowedOrigins: data.allowedOrigins || [],
     });
-  });
-
-export const getProjectById = createServerFn({ method: "GET" })
-  .inputValidator((d: { id: string }) => d)
-  .handler(async ({ data }) => {
-    return await getProjectByIdQuery(data.id);
   });
 
 export const updateProject = createServerFn({ method: "POST" })
@@ -58,6 +78,8 @@ export const updateProject = createServerFn({ method: "POST" })
     }) => d
   )
   .handler(async ({ data }) => {
+    // 프로젝트 관리자 권한 확인
+    await requireProjectAdmin(data.id);
     return await updateProjectQuery({
       id: data.id,
       name: data.name,
@@ -69,17 +91,21 @@ export const updateProject = createServerFn({ method: "POST" })
 export const deleteProject = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }) => {
+    // 프로젝트 관리자 권한 확인
+    await requireProjectAdmin(data.id);
     await deleteProjectQuery(data.id);
     return { success: true };
   });
 
 // ============================================
-// API Key 관련 서버 함수
+// API Key 관련 서버 함수 (관리자 필요)
 // ============================================
 
 export const generateApiKey = createServerFn({ method: "POST" })
   .inputValidator((d: { projectId: string }) => d)
   .handler(async ({ data }) => {
+    // 프로젝트 관리자 권한 확인
+    await requireProjectAdmin(data.projectId);
     const apiKey = await regenerateApiKeyQuery(data.projectId);
     return { apiKey };
   });
@@ -87,6 +113,8 @@ export const generateApiKey = createServerFn({ method: "POST" })
 export const revokeApiKey = createServerFn({ method: "POST" })
   .inputValidator((d: { projectId: string }) => d)
   .handler(async ({ data }) => {
+    // 프로젝트 관리자 권한 확인
+    await requireProjectAdmin(data.projectId);
     await revokeApiKeyQuery(data.projectId);
     return { success: true };
   });

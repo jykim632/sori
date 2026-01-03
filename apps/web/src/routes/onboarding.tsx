@@ -13,7 +13,7 @@ export const Route = createFileRoute("/onboarding")({
     }
 
     // Get existing organizations (don't redirect, allow creating more)
-    const organizations = await getUserOrganizations({ data: { userId: session.user.id } });
+    const organizations = await getUserOrganizations();
 
     return { session, hasOrganizations: organizations.length > 0 };
   },
@@ -63,7 +63,6 @@ function OnboardingPage() {
         data: {
           name: name.trim(),
           slug: slug.trim(),
-          userId: session.user.id,
         },
       });
       // Navigate to admin with the new org selected
