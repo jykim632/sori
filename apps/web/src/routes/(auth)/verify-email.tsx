@@ -6,7 +6,7 @@ type SearchParams = {
   email?: string;
 };
 
-export const Route = createFileRoute("/verify-email")({
+export const Route = createFileRoute("/(auth)/verify-email")({
   component: VerifyEmailPage,
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
     email: typeof search.email === "string" ? search.email : undefined,
