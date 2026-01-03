@@ -4,7 +4,6 @@ import type {
   OrganizationMember,
   OrganizationWithProjects,
   MemberRole,
-  User,
 } from "../types.ts";
 
 export async function getOrganizationBySlug(
