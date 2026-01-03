@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
+import { resolve } from "path";
 
 let cachedWidget: string | null = null;
 

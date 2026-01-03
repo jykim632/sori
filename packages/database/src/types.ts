@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+// JSON
+export type { JsonValue } from "./schemas/json.ts";
+
 // Enums
 import {
   MemberRoleSchema,
