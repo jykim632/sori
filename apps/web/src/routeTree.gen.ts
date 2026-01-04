@@ -17,12 +17,12 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
-import { Route as AdminProjectsRouteImport } from './routes/admin/projects'
 import { Route as AdminFeedbacksRouteImport } from './routes/admin/feedbacks'
 import { Route as authVerifyEmailRouteImport } from './routes/(auth)/verify-email'
 import { Route as authSignupRouteImport } from './routes/(auth)/signup'
 import { Route as authOnboardingRouteImport } from './routes/(auth)/onboarding'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
+import { Route as AdminProjectsIndexRouteImport } from './routes/admin/projects/index'
 import { Route as ApiV1WidgetRouteImport } from './routes/api/v1/widget'
 import { Route as ApiV1FeedbacksRouteImport } from './routes/api/v1/feedbacks'
 import { Route as ApiV1FeedbackRouteImport } from './routes/api/v1/feedback'
@@ -72,11 +72,6 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminProjectsRoute = AdminProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminFeedbacksRoute = AdminFeedbacksRouteImport.update({
   id: '/feedbacks',
   path: '/feedbacks',
@@ -102,6 +97,11 @@ const authLoginRoute = authLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminProjectsIndexRoute = AdminProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiV1WidgetRoute = ApiV1WidgetRouteImport.update({
   id: '/api/v1/widget',
   path: '/api/v1/widget',
@@ -123,9 +123,9 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminProjectsProjectIdRoute = AdminProjectsProjectIdRouteImport.update({
-  id: '/$projectId',
-  path: '/$projectId',
-  getParentRoute: () => AdminProjectsRoute,
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => AdminRoute,
 } as any)
 const ApiV1FeedbacksFeedbackIdRoute =
   ApiV1FeedbacksFeedbackIdRouteImport.update({
@@ -158,7 +158,6 @@ export interface FileRoutesByFullPath {
   '/signup': typeof authSignupRoute
   '/verify-email': typeof authVerifyEmailRoute
   '/admin/feedbacks': typeof AdminFeedbacksRoute
-  '/admin/projects': typeof AdminProjectsRouteWithChildren
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/projects/$projectId': typeof AdminProjectsProjectIdRoute
@@ -166,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/feedback': typeof ApiV1FeedbackRoute
   '/api/v1/feedbacks': typeof ApiV1FeedbacksRouteWithChildren
   '/api/v1/widget': typeof ApiV1WidgetRoute
+  '/admin/projects': typeof AdminProjectsIndexRoute
   '/api/v1/feedbacks/$feedbackId': typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
@@ -181,7 +181,6 @@ export interface FileRoutesByTo {
   '/signup': typeof authSignupRoute
   '/verify-email': typeof authVerifyEmailRoute
   '/admin/feedbacks': typeof AdminFeedbacksRoute
-  '/admin/projects': typeof AdminProjectsRouteWithChildren
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/projects/$projectId': typeof AdminProjectsProjectIdRoute
@@ -189,6 +188,7 @@ export interface FileRoutesByTo {
   '/api/v1/feedback': typeof ApiV1FeedbackRoute
   '/api/v1/feedbacks': typeof ApiV1FeedbacksRouteWithChildren
   '/api/v1/widget': typeof ApiV1WidgetRoute
+  '/admin/projects': typeof AdminProjectsIndexRoute
   '/api/v1/feedbacks/$feedbackId': typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
@@ -206,7 +206,6 @@ export interface FileRoutesById {
   '/(auth)/signup': typeof authSignupRoute
   '/(auth)/verify-email': typeof authVerifyEmailRoute
   '/admin/feedbacks': typeof AdminFeedbacksRoute
-  '/admin/projects': typeof AdminProjectsRouteWithChildren
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/projects/$projectId': typeof AdminProjectsProjectIdRoute
@@ -214,6 +213,7 @@ export interface FileRoutesById {
   '/api/v1/feedback': typeof ApiV1FeedbackRoute
   '/api/v1/feedbacks': typeof ApiV1FeedbacksRouteWithChildren
   '/api/v1/widget': typeof ApiV1WidgetRoute
+  '/admin/projects/': typeof AdminProjectsIndexRoute
   '/api/v1/feedbacks/$feedbackId': typeof ApiV1FeedbacksFeedbackIdRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
   '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
@@ -232,7 +232,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/admin/feedbacks'
-    | '/admin/projects'
     | '/admin/settings'
     | '/admin/'
     | '/admin/projects/$projectId'
@@ -240,6 +239,7 @@ export interface FileRouteTypes {
     | '/api/v1/feedback'
     | '/api/v1/feedbacks'
     | '/api/v1/widget'
+    | '/admin/projects'
     | '/api/v1/feedbacks/$feedbackId'
     | '/api/v1/feedbacks/$feedbackId/replies'
     | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
@@ -255,7 +255,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/admin/feedbacks'
-    | '/admin/projects'
     | '/admin/settings'
     | '/admin'
     | '/admin/projects/$projectId'
@@ -263,6 +262,7 @@ export interface FileRouteTypes {
     | '/api/v1/feedback'
     | '/api/v1/feedbacks'
     | '/api/v1/widget'
+    | '/admin/projects'
     | '/api/v1/feedbacks/$feedbackId'
     | '/api/v1/feedbacks/$feedbackId/replies'
     | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
@@ -279,7 +279,6 @@ export interface FileRouteTypes {
     | '/(auth)/signup'
     | '/(auth)/verify-email'
     | '/admin/feedbacks'
-    | '/admin/projects'
     | '/admin/settings'
     | '/admin/'
     | '/admin/projects/$projectId'
@@ -287,6 +286,7 @@ export interface FileRouteTypes {
     | '/api/v1/feedback'
     | '/api/v1/feedbacks'
     | '/api/v1/widget'
+    | '/admin/projects/'
     | '/api/v1/feedbacks/$feedbackId'
     | '/api/v1/feedbacks/$feedbackId/replies'
     | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
@@ -367,13 +367,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/projects': {
-      id: '/admin/projects'
-      path: '/projects'
-      fullPath: '/admin/projects'
-      preLoaderRoute: typeof AdminProjectsRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/feedbacks': {
       id: '/admin/feedbacks'
       path: '/feedbacks'
@@ -409,6 +402,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/projects/': {
+      id: '/admin/projects/'
+      path: '/projects'
+      fullPath: '/admin/projects'
+      preLoaderRoute: typeof AdminProjectsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/v1/widget': {
       id: '/api/v1/widget'
       path: '/api/v1/widget'
@@ -439,10 +439,10 @@ declare module '@tanstack/react-router' {
     }
     '/admin/projects/$projectId': {
       id: '/admin/projects/$projectId'
-      path: '/$projectId'
+      path: '/projects/$projectId'
       fullPath: '/admin/projects/$projectId'
       preLoaderRoute: typeof AdminProjectsProjectIdRouteImport
-      parentRoute: typeof AdminProjectsRoute
+      parentRoute: typeof AdminRoute
     }
     '/api/v1/feedbacks/$feedbackId': {
       id: '/api/v1/feedbacks/$feedbackId'
@@ -468,30 +468,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AdminProjectsRouteChildren {
-  AdminProjectsProjectIdRoute: typeof AdminProjectsProjectIdRoute
-}
-
-const AdminProjectsRouteChildren: AdminProjectsRouteChildren = {
-  AdminProjectsProjectIdRoute: AdminProjectsProjectIdRoute,
-}
-
-const AdminProjectsRouteWithChildren = AdminProjectsRoute._addFileChildren(
-  AdminProjectsRouteChildren,
-)
-
 interface AdminRouteChildren {
   AdminFeedbacksRoute: typeof AdminFeedbacksRoute
-  AdminProjectsRoute: typeof AdminProjectsRouteWithChildren
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminProjectsProjectIdRoute: typeof AdminProjectsProjectIdRoute
+  AdminProjectsIndexRoute: typeof AdminProjectsIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminFeedbacksRoute: AdminFeedbacksRoute,
-  AdminProjectsRoute: AdminProjectsRouteWithChildren,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminProjectsProjectIdRoute: AdminProjectsProjectIdRoute,
+  AdminProjectsIndexRoute: AdminProjectsIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

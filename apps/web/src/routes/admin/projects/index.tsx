@@ -4,7 +4,7 @@ import { getProjects, createProject, deleteProject, updateProject } from "@/serv
 import { Plus, X, FolderOpen, Copy, Check, Trash2, Palette, Pencil } from "lucide-react";
 import { DeleteProjectModal, EditProjectModal, type Project } from "@/components/admin";
 
-export const Route = createFileRoute("/admin/projects")({
+export const Route = createFileRoute("/admin/projects/")({
   component: ProjectsPage,
   validateSearch: (search: Record<string, unknown>) => ({
     org: typeof search.org === "string" ? search.org : undefined,
