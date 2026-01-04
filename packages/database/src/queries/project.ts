@@ -34,6 +34,7 @@ export async function getProjectById(id: string): Promise<ProjectWithOrganizatio
     SELECT
       p.id, p.name, p.allowed_origins as "allowedOrigins",
       p.widget_config as "widgetConfig", p.organization_id as "organizationId",
+      p.api_key as "apiKey", p.api_key_created_at as "apiKeyCreatedAt",
       p.created_at as "createdAt", p.updated_at as "updatedAt",
       json_build_object(
         'id', o.id,
