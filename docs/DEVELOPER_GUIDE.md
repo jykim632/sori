@@ -386,13 +386,7 @@ GITHUB_CLIENT_SECRET=""
 # 1. 의존성 설치
 pnpm install
 
-# 2. DB 스키마 푸시
-pnpm --filter @sori/database db:push
-
-# 3. Prisma 클라이언트 생성
-pnpm --filter @sori/database db:generate
-
-# 4. 개발 서버 시작
+# 2. 개발 서버 시작
 pnpm dev
 ```
 
@@ -409,12 +403,7 @@ pnpm build                # 전체 빌드
 pnpm --filter @sori/web dev      # 어드민 대시보드 (localhost:3000)
 pnpm --filter @sori/cdn dev      # CDN 서버 (localhost:3001)
 pnpm --filter @sori/core build
-pnpm --filter @sori/database db:studio
-
-# 데이터베이스
-pnpm --filter @sori/database db:generate  # 클라이언트 재생성
-pnpm --filter @sori/database db:push      # 스키마 푸시
-pnpm --filter @sori/database db:migrate   # 마이그레이션
+pnpm --filter @sori/database build
 
 # 타입 체크
 pnpm --filter @sori/web exec tsc --noEmit
@@ -438,23 +427,18 @@ pnpm --filter @sori/cdn exec tsc --noEmit
 
 ### Webhook 모델
 
-```prisma
-model Webhook {
-  id             String       @id @default(cuid())
-  name           String       // 예: "Slack - 개발팀"
-  url            String
-  type           WebhookType  @default(CUSTOM)
-  enabled        Boolean      @default(true)
-  organizationId String
-  organization   Organization @relation(...)
-}
-
-enum WebhookType {
-  SLACK
-  DISCORD
-  TELEGRAM
-  CUSTOM
-}
+```typescript
+// packages/database/src/schemas/webhook.ts
+export const WebhookSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  url: z.string(),
+  type: z.enum(["SLACK", "DISCORD", "TELEGRAM", "CUSTOM"]),
+  enabled: z.boolean(),
+  organizationId: z.string(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
 ```
 
 ### 웹훅 타입 자동 감지

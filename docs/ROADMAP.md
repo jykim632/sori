@@ -100,7 +100,7 @@
 
 - `apps/web/src/routes/admin.tsx` - Settings 탭 확장
 - `apps/web/src/server/organization.ts` - 멤버 관리 함수
-- `packages/database/prisma/schema.prisma` - Invitation 테이블 추가 필요
+- `packages/database/src/schemas/` - Invitation 스키마 추가 필요
 - 새 파일: `apps/web/src/routes/invite.tsx` - 초대 수락 페이지
 
 **작업 내용**
@@ -113,19 +113,18 @@
 
 **데이터 모델 (추가)**
 
-```prisma
-model Invitation {
-  id             String   @id @default(cuid())
-  email          String
-  role           MemberRole @default(MEMBER)
-  token          String   @unique
-  expiresAt      DateTime
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  invitedById    String
-  invitedBy      User     @relation(fields: [invitedById], references: [id])
-  createdAt      DateTime @default(now())
-}
+```typescript
+// packages/database/src/schemas/invitation.ts
+export const InvitationSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  role: z.enum(["OWNER", "ADMIN", "MEMBER"]),
+  token: z.string(),
+  expiresAt: z.coerce.date(),
+  organizationId: z.string(),
+  invitedById: z.string(),
+  createdAt: z.coerce.date(),
+});
 ```
 
 ---
@@ -148,7 +147,7 @@ model Invitation {
 
 - `apps/web/src/routes/api/v1/feedback.ts` - 피드백 생성 후 알림 발송
 - `apps/web/src/server/organization.ts` - 알림 설정 관리
-- `packages/database/prisma/schema.prisma` - NotificationSetting 테이블
+- `packages/database/src/schemas/` - NotificationSetting 스키마
 - 새 파일: `apps/web/src/lib/email.ts` - 이메일 발송 유틸
 
 **작업 내용**
@@ -294,7 +293,7 @@ model Invitation {
 
 - `packages/core/src/widget.ts` - 스크린샷 캡처 기능
 - `apps/web/src/routes/api/v1/upload.ts` - 이미지 업로드 API
-- `packages/database/prisma/schema.prisma` - Feedback에 attachments 필드
+- `packages/database/src/schemas/feedback.ts` - attachments 필드 추가
 
 **작업 내용**
 
@@ -335,7 +334,7 @@ Plan(FREE/PRO/TEAM/ENTERPRISE)별 기능 제한과 결제 시스템입니다. St
 
 **관련 파일**
 
-- `packages/database/prisma/schema.prisma` - Subscription 테이블
+- `packages/database/src/schemas/` - Subscription 스키마
 - 새 파일: `apps/web/src/routes/billing.tsx` - 결제 페이지
 - 새 파일: `apps/web/src/lib/stripe.ts` - Stripe 클라이언트
 - 새 파일: `apps/web/src/routes/api/webhook/stripe.ts` - Stripe 웹훅

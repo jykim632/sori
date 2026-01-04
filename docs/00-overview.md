@@ -30,7 +30,7 @@
 - **Frontend**: TanStack Start (React 19, Vite)
 - **Backend**: TanStack Server Functions
 - **Database**: Supabase (PostgreSQL)
-- **ORM**: Prisma 7.x
+- **Database Client**: pg (node-postgres) + raw SQL
 - **Widget**: Vanilla JS (의존성 0)
 - **Monorepo**: pnpm + Turborepo
 
