@@ -11,6 +11,14 @@ import {
 import { getOrganizationWithProjects } from "./organization";
 import { formatWebhookPayload } from "@/lib/webhook";
 import { AppError } from "@/lib/errors";
+import { zodValidator } from "@/lib/zod-validator";
+import {
+  GetWebhooksInputSchema,
+  CreateWebhookInputSchema,
+  UpdateWebhookInputSchema,
+  DeleteWebhookInputSchema,
+  TestWebhookByIdInputSchema,
+} from "@/lib/schemas/server-input";
 
 // Plan limits for webhooks
 const WEBHOOK_LIMITS: Record<Plan, number> = {
@@ -22,18 +30,18 @@ const WEBHOOK_LIMITS: Record<Plan, number> = {
 
 // Get all webhooks for an organization
 export const getWebhooks = createServerFn({ method: "GET" })
-  .inputValidator((d: { organizationId: string }) => d)
+  .inputValidator(zodValidator(GetWebhooksInputSchema))
   .handler(async ({ data }) => {
     return await getWebhooksQuery(data.organizationId);
   });
 
 // Create a new webhook
 export const createWebhook = createServerFn({ method: "POST" })
-  .inputValidator((d: { organizationId: string; name: string; url: string }) => d)
+  .inputValidator(zodValidator(CreateWebhookInputSchema))
   .handler(async ({ data }) => {
     const { organizationId, name, url } = data;
 
-    // Validate URL
+    // URL 형식 검증 (명확한 에러 메시지 VAL_INVALID_URL)
     try {
       new URL(url);
     } catch {
@@ -62,7 +70,7 @@ export const createWebhook = createServerFn({ method: "POST" })
 
 // Update a webhook
 export const updateWebhook = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; name?: string; url?: string; enabled?: boolean }) => d)
+  .inputValidator(zodValidator(UpdateWebhookInputSchema))
   .handler(async ({ data }) => {
     const { id, name, url, enabled } = data;
 
@@ -80,14 +88,14 @@ export const updateWebhook = createServerFn({ method: "POST" })
 
 // Delete a webhook
 export const deleteWebhook = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator(zodValidator(DeleteWebhookInputSchema))
   .handler(async ({ data }) => {
     await deleteWebhookQuery(data.id);
     return { success: true };
   });
 
 export const testWebhookById = createServerFn({ method: "POST" })
-  .inputValidator((d: { webhookId: string }) => d)
+  .inputValidator(zodValidator(TestWebhookByIdInputSchema))
   .handler(async ({ data }) => {
     const webhook = await getWebhookWithOrganization(data.webhookId);
 

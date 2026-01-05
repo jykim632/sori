@@ -14,13 +14,23 @@ import {
   requireProjectAccess,
   requireProjectAdmin,
 } from "./auth-helpers";
+import { zodValidator } from "@/lib/zod-validator";
+import {
+  GetProjectsInputSchema,
+  GetProjectByIdInputSchema,
+  CreateProjectInputSchema,
+  UpdateProjectInputSchema,
+  DeleteProjectInputSchema,
+  GenerateApiKeyInputSchema,
+  RevokeApiKeyInputSchema,
+} from "@/lib/schemas/server-input";
 
 // ============================================
 // 프로젝트 조회 (멤버십 필요)
 // ============================================
 
 export const getProjects = createServerFn({ method: "GET" })
-  .inputValidator((d: { organizationId?: string }) => d)
+  .inputValidator(zodValidator(GetProjectsInputSchema))
   .handler(async ({ data }) => {
     if (!data?.organizationId) {
       return [];
@@ -31,7 +41,7 @@ export const getProjects = createServerFn({ method: "GET" })
   });
 
 export const getProjectById = createServerFn({ method: "GET" })
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator(zodValidator(GetProjectByIdInputSchema))
   .handler(async ({ data }) => {
     // 프로젝트 접근 권한 확인
     await requireProjectAccess(data.id);
@@ -43,13 +53,7 @@ export const getProjectById = createServerFn({ method: "GET" })
 // ============================================
 
 export const createProject = createServerFn({ method: "POST" })
-  .inputValidator(
-    (d: {
-      name: string;
-      organizationId: string;
-      allowedOrigins?: string[];
-    }) => d
-  )
+  .inputValidator(zodValidator(CreateProjectInputSchema))
   .handler(async ({ data }) => {
     // 조직 관리자 권한 확인
     await requireOrgAdmin(data.organizationId);
@@ -61,22 +65,7 @@ export const createProject = createServerFn({ method: "POST" })
   });
 
 export const updateProject = createServerFn({ method: "POST" })
-  .inputValidator(
-    (d: {
-      id: string;
-      name?: string;
-      allowedOrigins?: string[];
-      widgetConfig?: {
-        preset: "default" | "minimal" | "rounded";
-        styles?: Record<string, unknown>;
-        position?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
-        greeting?: string;
-        types?: ("BUG" | "INQUIRY" | "FEATURE")[];
-        locale?: "ko" | "en";
-        zIndex?: number;
-      };
-    }) => d
-  )
+  .inputValidator(zodValidator(UpdateProjectInputSchema))
   .handler(async ({ data }) => {
     // 프로젝트 관리자 권한 확인
     await requireProjectAdmin(data.id);
@@ -89,7 +78,7 @@ export const updateProject = createServerFn({ method: "POST" })
   });
 
 export const deleteProject = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator(zodValidator(DeleteProjectInputSchema))
   .handler(async ({ data }) => {
     // 프로젝트 관리자 권한 확인
     await requireProjectAdmin(data.id);
@@ -102,7 +91,7 @@ export const deleteProject = createServerFn({ method: "POST" })
 // ============================================
 
 export const generateApiKey = createServerFn({ method: "POST" })
-  .inputValidator((d: { projectId: string }) => d)
+  .inputValidator(zodValidator(GenerateApiKeyInputSchema))
   .handler(async ({ data }) => {
     // 프로젝트 관리자 권한 확인
     await requireProjectAdmin(data.projectId);
@@ -111,7 +100,7 @@ export const generateApiKey = createServerFn({ method: "POST" })
   });
 
 export const revokeApiKey = createServerFn({ method: "POST" })
-  .inputValidator((d: { projectId: string }) => d)
+  .inputValidator(zodValidator(RevokeApiKeyInputSchema))
   .handler(async ({ data }) => {
     // 프로젝트 관리자 권한 확인
     await requireProjectAdmin(data.projectId);

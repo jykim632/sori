@@ -11,12 +11,20 @@ import {
 import { getSessionUserId, requireOrgMembership, requireOrgAdmin } from "./auth-helpers";
 import { formatWebhookPayload } from "@/lib/webhook";
 import { AppError } from "@/lib/errors";
+import { zodValidator } from "@/lib/zod-validator";
+import {
+  CreateOrganizationInputSchema,
+  GetOrganizationWithProjectsInputSchema,
+  GetUserRoleInOrganizationInputSchema,
+  UpdateOrganizationWebhookInputSchema,
+  TestWebhookInputSchema,
+} from "@/lib/schemas/server-input";
 
 // ============================================
 // 조직 생성 (인증 필요)
 // ============================================
 export const createOrganization = createServerFn({ method: "POST" })
-  .inputValidator((d: { name: string; slug: string }) => d)
+  .inputValidator(zodValidator(CreateOrganizationInputSchema))
   .handler(async ({ data }) => {
     // 세션에서 userId 추출 (클라이언트에서 받지 않음)
     const userId = await getSessionUserId();
@@ -59,7 +67,7 @@ export const getUserOrganization = createServerFn({ method: "GET" })
 
 // Get organization with projects (멤버십 확인)
 export const getOrganizationWithProjects = createServerFn({ method: "GET" })
-  .inputValidator((d: { organizationId: string }) => d)
+  .inputValidator(zodValidator(GetOrganizationWithProjectsInputSchema))
   .handler(async ({ data }) => {
     // 해당 조직의 멤버인지 확인
     await requireOrgMembership(data.organizationId);
@@ -68,7 +76,7 @@ export const getOrganizationWithProjects = createServerFn({ method: "GET" })
 
 // Get user's role in a specific organization
 export const getUserRoleInOrganization = createServerFn({ method: "GET" })
-  .inputValidator((d: { organizationId: string }) => d)
+  .inputValidator(zodValidator(GetUserRoleInOrganizationInputSchema))
   .handler(async ({ data }) => {
     const userId = await getSessionUserId();
     return await getUserRoleInOrganizationQuery(userId, data.organizationId);
@@ -80,7 +88,7 @@ export const getUserRoleInOrganization = createServerFn({ method: "GET" })
 
 // Update organization webhook URL
 export const updateOrganizationWebhook = createServerFn({ method: "POST" })
-  .inputValidator((d: { organizationId: string; webhookUrl: string | null }) => d)
+  .inputValidator(zodValidator(UpdateOrganizationWebhookInputSchema))
   .handler(async ({ data }) => {
     const { organizationId, webhookUrl } = data;
 
@@ -101,15 +109,7 @@ export const updateOrganizationWebhook = createServerFn({ method: "POST" })
 
 // Test webhook (server-side to avoid CORS)
 export const testWebhook = createServerFn({ method: "POST" })
-  .inputValidator(
-    (d: {
-      webhookUrl: string;
-      organizationId: string;
-      organizationName: string;
-      projectId?: string;
-      projectName?: string;
-    }) => d
-  )
+  .inputValidator(zodValidator(TestWebhookInputSchema))
   .handler(async ({ data }) => {
     // 해당 조직의 멤버인지 확인
     await requireOrgMembership(data.organizationId);
