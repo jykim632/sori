@@ -117,7 +117,7 @@ export const testWebhook = createServerFn({ method: "POST" })
 
     const testFeedback = {
       id: "test_" + Date.now(),
-      type: "BUG",
+      type: "BUG" as const,
       message: "이것은 테스트 피드백입니다.",
       email: "test@example.com",
       metadata: { url: "https://example.com" },
