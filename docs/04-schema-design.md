@@ -1,5 +1,9 @@
 # 스키마 설계
 
+> **Note**: 이 문서는 초기 설계 시 Prisma 기반으로 작성되었습니다.
+> 현재는 `pg` (node-postgres) + raw SQL로 마이그레이션 완료되었으며,
+> 스키마 정의는 `packages/database/src/schemas/`의 Zod 스키마를 참조하세요.
+
 ## 기존 스키마 (마이그레이션 전)
 
 ```prisma
@@ -261,9 +265,11 @@ interface FeedbackMetadata {
 | Feedback | status | 상태별 필터링 |
 | Feedback | createdAt | 최신순 정렬 |
 
-## 마이그레이션 계획
+## 마이그레이션 이력
 
-1. Supabase 프로젝트 생성
-2. Prisma 7.x 업그레이드
-3. 스키마 적용 (`prisma db push`)
+1. ~~Supabase 프로젝트 생성~~ ✅
+2. ~~Prisma 7.x 적용~~ → **pg + raw SQL로 전환** ✅
+3. ~~스키마 적용~~ ✅
 4. 시드 데이터 생성
+
+자세한 마이그레이션 기록: `docs/issues/002-prisma-to-pg-migration.md`

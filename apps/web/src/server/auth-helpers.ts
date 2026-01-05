@@ -1,5 +1,6 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { auth } from "@/lib/auth";
+import { AppError } from "@/lib/errors";
 
 // ============================================
 // 권한 검증 헬퍼 (서버 사이드 전용)
@@ -15,7 +16,7 @@ export async function getSessionUserId(): Promise<string> {
   const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+    throw new AppError("AUTH_UNAUTHORIZED");
   }
 
   return session.user.id;
@@ -34,7 +35,7 @@ export async function requireOrgMembership(organizationId: string): Promise<{
   const role = await getUserRoleInOrganization(userId, organizationId);
 
   if (!role) {
-    throw new Error("Forbidden: Not a member of this organization");
+    throw new AppError("AUTH_NOT_MEMBER");
   }
 
   return { userId, role };
@@ -50,7 +51,7 @@ export async function requireOrgAdmin(organizationId: string): Promise<{
   const { userId, role } = await requireOrgMembership(organizationId);
 
   if (role !== "OWNER" && role !== "ADMIN") {
-    throw new Error("Forbidden: Admin access required");
+    throw new AppError("AUTH_ADMIN_REQUIRED");
   }
 
   return { userId, role };
@@ -69,7 +70,7 @@ export async function requireProjectAccess(projectId: string): Promise<{
   const project = await getProjectById(projectId);
 
   if (!project) {
-    throw new Error("Project not found");
+    throw new AppError("RES_PROJECT_NOT_FOUND");
   }
 
   const { userId, role } = await requireOrgMembership(project.organizationId);
@@ -88,7 +89,7 @@ export async function requireProjectAdmin(projectId: string): Promise<{
   const project = await getProjectById(projectId);
 
   if (!project) {
-    throw new Error("Project not found");
+    throw new AppError("RES_PROJECT_NOT_FOUND");
   }
 
   const { userId, role } = await requireOrgAdmin(project.organizationId);

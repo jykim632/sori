@@ -9,12 +9,22 @@ import {
   getOrganizationBySlug,
 } from "@sori/database";
 import { getSessionUserId, requireOrgMembership, requireOrgAdmin } from "./auth-helpers";
+import { formatWebhookPayload } from "@/lib/webhook";
+import { AppError } from "@/lib/errors";
+import { zodValidator } from "@/lib/zod-validator";
+import {
+  CreateOrganizationInputSchema,
+  GetOrganizationWithProjectsInputSchema,
+  GetUserRoleInOrganizationInputSchema,
+  UpdateOrganizationWebhookInputSchema,
+  TestWebhookInputSchema,
+} from "@/lib/schemas/server-input";
 
 // ============================================
 // 조직 생성 (인증 필요)
 // ============================================
 export const createOrganization = createServerFn({ method: "POST" })
-  .inputValidator((d: { name: string; slug: string }) => d)
+  .inputValidator(zodValidator(CreateOrganizationInputSchema))
   .handler(async ({ data }) => {
     // 세션에서 userId 추출 (클라이언트에서 받지 않음)
     const userId = await getSessionUserId();
@@ -24,7 +34,7 @@ export const createOrganization = createServerFn({ method: "POST" })
     const existing = await getOrganizationBySlug(slug);
 
     if (existing) {
-      throw new Error("이미 사용 중인 URL입니다");
+      throw new AppError("VAL_DUPLICATE_SLUG");
     }
 
     // Create organization with the user as OWNER
@@ -57,7 +67,7 @@ export const getUserOrganization = createServerFn({ method: "GET" })
 
 // Get organization with projects (멤버십 확인)
 export const getOrganizationWithProjects = createServerFn({ method: "GET" })
-  .inputValidator((d: { organizationId: string }) => d)
+  .inputValidator(zodValidator(GetOrganizationWithProjectsInputSchema))
   .handler(async ({ data }) => {
     // 해당 조직의 멤버인지 확인
     await requireOrgMembership(data.organizationId);
@@ -66,7 +76,7 @@ export const getOrganizationWithProjects = createServerFn({ method: "GET" })
 
 // Get user's role in a specific organization
 export const getUserRoleInOrganization = createServerFn({ method: "GET" })
-  .inputValidator((d: { organizationId: string }) => d)
+  .inputValidator(zodValidator(GetUserRoleInOrganizationInputSchema))
   .handler(async ({ data }) => {
     const userId = await getSessionUserId();
     return await getUserRoleInOrganizationQuery(userId, data.organizationId);
@@ -78,7 +88,7 @@ export const getUserRoleInOrganization = createServerFn({ method: "GET" })
 
 // Update organization webhook URL
 export const updateOrganizationWebhook = createServerFn({ method: "POST" })
-  .inputValidator((d: { organizationId: string; webhookUrl: string | null }) => d)
+  .inputValidator(zodValidator(UpdateOrganizationWebhookInputSchema))
   .handler(async ({ data }) => {
     const { organizationId, webhookUrl } = data;
 
@@ -90,128 +100,16 @@ export const updateOrganizationWebhook = createServerFn({ method: "POST" })
       try {
         new URL(webhookUrl);
       } catch {
-        throw new Error("유효한 URL을 입력해주세요");
+        throw new AppError("VAL_INVALID_URL");
       }
     }
 
     return await updateOrganizationWebhookQuery(organizationId, webhookUrl);
   });
 
-// Get type emoji and label for webhook formatting
-function getTypeInfo(type: string) {
-  switch (type) {
-    case "BUG": return { emoji: "🐛", label: "버그 리포트" };
-    case "FEATURE": return { emoji: "💡", label: "기능 요청" };
-    case "INQUIRY": return { emoji: "❓", label: "문의" };
-    default: return { emoji: "📝", label: type };
-  }
-}
-
-// Format payload for different webhook services
-function formatWebhookPayload(
-  webhookUrl: string,
-  feedback: { id: string; type: string; message: string; email: string | null; metadata: { url?: string } | null },
-  project: { id: string; name: string },
-  organization: { id: string; name: string },
-  isTest = false
-) {
-  const typeInfo = getTypeInfo(feedback.type);
-  const eventLabel = isTest ? "🔔 웹훅 테스트" : "🔔 새 피드백";
-
-  // Slack format
-  if (webhookUrl.includes("hooks.slack.com")) {
-    return {
-      blocks: [
-        {
-          type: "header",
-          text: { type: "plain_text", text: eventLabel, emoji: true },
-        },
-        {
-          type: "section",
-          fields: [
-            { type: "mrkdwn", text: `*유형:*\n${typeInfo.emoji} ${typeInfo.label}` },
-            { type: "mrkdwn", text: `*프로젝트:*\n${project.name}` },
-          ],
-        },
-        {
-          type: "section",
-          text: { type: "mrkdwn", text: `*메시지:*\n${feedback.message}` },
-        },
-        ...(feedback.email
-          ? [{ type: "section", fields: [{ type: "mrkdwn", text: `*이메일:*\n${feedback.email}` }] }]
-          : []),
-        ...(feedback.metadata?.url
-          ? [{ type: "context", elements: [{ type: "mrkdwn", text: `📍 ${feedback.metadata.url}` }] }]
-          : []),
-      ],
-    };
-  }
-
-  // Discord format
-  if (webhookUrl.includes("discord.com/api/webhooks")) {
-    return {
-      embeds: [
-        {
-          title: eventLabel,
-          color: feedback.type === "BUG" ? 0xef4444 : feedback.type === "FEATURE" ? 0x8b5cf6 : 0x3b82f6,
-          fields: [
-            { name: "유형", value: `${typeInfo.emoji} ${typeInfo.label}`, inline: true },
-            { name: "프로젝트", value: project.name, inline: true },
-            { name: "메시지", value: feedback.message },
-            ...(feedback.email ? [{ name: "이메일", value: feedback.email, inline: true }] : []),
-            ...(feedback.metadata?.url ? [{ name: "URL", value: feedback.metadata.url }] : []),
-          ],
-          timestamp: new Date().toISOString(),
-        },
-      ],
-    };
-  }
-
-  // Telegram format (Bot API)
-  if (webhookUrl.includes("api.telegram.org")) {
-    const lines = [
-      `<b>${eventLabel}</b>`,
-      ``,
-      `${typeInfo.emoji} <b>유형:</b> ${typeInfo.label}`,
-      `📁 <b>프로젝트:</b> ${project.name}`,
-      ``,
-      `💬 <b>메시지:</b>`,
-      feedback.message,
-    ];
-    if (feedback.email) {
-      lines.push(``, `📧 <b>이메일:</b> ${feedback.email}`);
-    }
-    if (feedback.metadata?.url) {
-      lines.push(``, `🔗 ${feedback.metadata.url}`);
-    }
-
-    return {
-      text: lines.join("\n"),
-      parse_mode: "HTML",
-    };
-  }
-
-  // Generic JSON format
-  return {
-    event: isTest ? "webhook.test" : "feedback.created",
-    timestamp: new Date().toISOString(),
-    feedback,
-    project,
-    organization,
-  };
-}
-
 // Test webhook (server-side to avoid CORS)
 export const testWebhook = createServerFn({ method: "POST" })
-  .inputValidator(
-    (d: {
-      webhookUrl: string;
-      organizationId: string;
-      organizationName: string;
-      projectId?: string;
-      projectName?: string;
-    }) => d
-  )
+  .inputValidator(zodValidator(TestWebhookInputSchema))
   .handler(async ({ data }) => {
     // 해당 조직의 멤버인지 확인
     await requireOrgMembership(data.organizationId);
@@ -220,7 +118,7 @@ export const testWebhook = createServerFn({ method: "POST" })
 
     const testFeedback = {
       id: "test_" + Date.now(),
-      type: "BUG",
+      type: "BUG" as const,
       message: "이것은 테스트 피드백입니다.",
       email: "test@example.com",
       metadata: { url: "https://example.com" },

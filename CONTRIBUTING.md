@@ -142,7 +142,7 @@ chore: 의존성 업데이트
 packages/
 ├── core/       # Widget (vanilla JS) - keep it lightweight!
 ├── react/      # React wrapper
-└── database/   # Prisma schema and client
+└── database/   # PostgreSQL client (raw SQL)
 
 apps/
 ├── cdn/        # Widget CDN

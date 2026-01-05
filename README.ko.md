@@ -167,7 +167,7 @@ sori/
 ├── packages/
 │   ├── core/       # 바닐라 JS 위젯 (MIT)
 │   ├── react/      # React 래퍼 (MIT)
-│   └── database/   # Prisma 클라이언트
+│   └── database/   # PostgreSQL 클라이언트 (raw SQL)
 └── apps/
     └── web/        # 어드민 대시보드
 ```
@@ -176,7 +176,7 @@ sori/
 
 - **위젯**: 바닐라 자바스크립트, 의존성 없음
 - **대시보드**: React 19, TanStack Start, Tailwind CSS
-- **데이터베이스**: PostgreSQL + Prisma ORM
+- **데이터베이스**: PostgreSQL + pg (raw SQL)
 - **인증**: better-auth
 
 ## 기여하기

@@ -77,7 +77,7 @@ function SettingsPage() {
       });
       router.invalidate();
     } catch (error) {
-      console.error(error);
+      alert(error instanceof Error ? error.message : "웹훅 상태 변경에 실패했습니다.");
     } finally {
       setTogglingWebhookId(null);
     }
@@ -91,7 +91,7 @@ function SettingsPage() {
       await deleteWebhook({ data: { id: webhookId } });
       router.invalidate();
     } catch (error) {
-      console.error(error);
+      alert(error instanceof Error ? error.message : "웹훅 삭제에 실패했습니다.");
     } finally {
       setDeletingWebhookId(null);
     }

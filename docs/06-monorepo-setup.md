@@ -209,7 +209,7 @@ export default defineConfig([
   "dependencies": {
     "@sori/react": "workspace:*",
     "@tanstack/react-start": "^1.132.0",
-    "prisma": "^5.22.0"
+    "@sori/database": "workspace:*"
   },
   "devDependencies": {
     "@sori/tsconfig": "workspace:*"
@@ -275,8 +275,8 @@ Total: ~200ms (캐시 히트)
 
 ## 다음 단계
 
-1. Supabase 연동 및 Prisma 7.x 업그레이드
-2. 스키마 마이그레이션
+1. ~~Supabase 연동 및 Prisma 7.x 업그레이드~~ → pg + raw SQL로 전환 완료 ✅
+2. ~~스키마 마이그레이션~~ ✅
 3. API 엔드포인트 구현
 4. 위젯 ↔ Admin 연동 테스트
 5. npm 패키지 배포 준비

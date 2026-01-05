@@ -6,7 +6,7 @@ type SearchParams = {
   email?: string;
 };
 
-export const Route = createFileRoute("/verify-email")({
+export const Route = createFileRoute("/(auth)/verify-email")({
   component: VerifyEmailPage,
   validateSearch: (search: Record<string, unknown>): SearchParams => ({
     email: typeof search.email === "string" ? search.email : undefined,
@@ -34,7 +34,7 @@ function VerifyEmailPage() {
         setTimeout(() => setResent(false), 5000);
       }
     } catch (error) {
-      console.error("Failed to resend verification email:", error);
+      alert(error instanceof Error ? error.message : "인증 이메일 재전송에 실패했습니다.");
     } finally {
       setResending(false);
     }

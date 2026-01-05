@@ -167,7 +167,7 @@ sori/
 ├── packages/
 │   ├── core/       # Vanilla JS widget (MIT)
 │   ├── react/      # React wrapper (MIT)
-│   └── database/   # Prisma client
+│   └── database/   # PostgreSQL client (raw SQL)
 └── apps/
     └── web/        # Admin dashboard
 ```
@@ -176,7 +176,7 @@ sori/
 
 - **Widget**: Vanilla JavaScript, zero dependencies
 - **Dashboard**: React 19, TanStack Start, Tailwind CSS
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: PostgreSQL with pg (raw SQL)
 - **Auth**: better-auth
 
 ## Contributing

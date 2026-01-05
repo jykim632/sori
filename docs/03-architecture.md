@@ -21,7 +21,7 @@
 │ └── /widget.js    │    │ └── 어드민 대시보드             │
 └───────────────────┘    └───────────────────────────────┘
                                       │
-                                      ▼ Prisma
+                                      ▼ pg (raw SQL)
                          ┌─────────────────────────────────┐
                          │  Supabase (PostgreSQL)          │
                          └─────────────────────────────────┘
@@ -69,11 +69,11 @@ sori/
 │   │       ├── SoriWidget.tsx
 │   │       └── useSori.ts
 │   │
-│   └── database/             # Prisma ORM
-│       ├── prisma/
-│       │   └── schema.prisma
+│   └── database/             # PostgreSQL client (raw SQL)
 │       └── src/
-│           └── client.ts
+│           ├── client.ts     # pg Pool + query helpers
+│           ├── schemas/      # Zod schemas
+│           └── queries/      # SQL query functions
 │
 └── tooling/
     └── tsconfig/             # 공유 TypeScript 설정
@@ -94,7 +94,7 @@ sori/
 | 기술 | 용도 | 버전 |
 |------|------|------|
 | TanStack Server Functions | API | - |
-| Prisma | ORM | 7.x (예정) |
+| pg (node-postgres) | DB client | - |
 | Supabase | 데이터베이스 | - |
 | PostgreSQL | DB 엔진 | 15.x |
 

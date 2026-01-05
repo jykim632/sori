@@ -151,8 +151,7 @@ function ProjectSettingsPage() {
       setApiKey(result.apiKey);
       setShowNewKey(result.apiKey); // 새로 생성된 키는 한 번만 전체 표시
     } catch (error) {
-      console.error("Failed to generate API key:", error);
-      alert("API 키 생성에 실패했습니다.");
+      alert(error instanceof Error ? error.message : "API 키 생성에 실패했습니다.");
     } finally {
       setApiKeyLoading(false);
     }
@@ -165,8 +164,7 @@ function ProjectSettingsPage() {
       setApiKey(null);
       setShowRevokeConfirm(false);
     } catch (error) {
-      console.error("Failed to revoke API key:", error);
-      alert("API 키 삭제에 실패했습니다.");
+      alert(error instanceof Error ? error.message : "API 키 삭제에 실패했습니다.");
     } finally {
       setApiKeyLoading(false);
     }
@@ -205,8 +203,7 @@ function ProjectSettingsPage() {
       setBasicInfoSaved(true);
       setTimeout(() => setBasicInfoSaved(false), 3000);
     } catch (error) {
-      console.error("Failed to save basic info:", error);
-      alert("저장에 실패했습니다.");
+      alert(error instanceof Error ? error.message : "저장에 실패했습니다.");
     } finally {
       setSavingBasicInfo(false);
     }
@@ -220,8 +217,7 @@ function ProjectSettingsPage() {
       await deleteProject({ data: { id: project.id } });
       router.navigate({ to: "/admin/projects", search: { org } });
     } catch (error) {
-      console.error("Failed to delete project:", error);
-      alert("프로젝트 삭제에 실패했습니다.");
+      alert(error instanceof Error ? error.message : "프로젝트 삭제에 실패했습니다.");
       setDeleting(false);
     }
   };
@@ -270,8 +266,7 @@ function ProjectSettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error("Failed to save:", error);
-      alert("저장에 실패했습니다.");
+      alert(error instanceof Error ? error.message : "저장에 실패했습니다.");
     } finally {
       setSaving(false);
     }

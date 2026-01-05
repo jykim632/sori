@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { query, queryOne, queryReturning, generateId } from "../client.ts";
 import type { Project, ProjectWithOrganization, Organization, Webhook } from "../types.ts";
 
@@ -34,6 +35,7 @@ export async function getProjectById(id: string): Promise<ProjectWithOrganizatio
     SELECT
       p.id, p.name, p.allowed_origins as "allowedOrigins",
       p.widget_config as "widgetConfig", p.organization_id as "organizationId",
+      p.api_key as "apiKey", p.api_key_created_at as "apiKeyCreatedAt",
       p.created_at as "createdAt", p.updated_at as "updatedAt",
       json_build_object(
         'id', o.id,
@@ -175,15 +177,10 @@ export async function deleteProject(id: string): Promise<void> {
 // API Key 관련 함수
 // ============================================
 
-// Secure API Key 생성
+// Secure API Key 생성 (crypto.randomBytes 사용)
 function generateSecureApiKey(): string {
   const prefix = "sk_live_";
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let key = "";
-  for (let i = 0; i < 32; i++) {
-    key += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return prefix + key;
+  return prefix + randomBytes(24).toString("base64url");
 }
 
 // API 키로 프로젝트 조회
