@@ -9,6 +9,7 @@ import {
   type FeedbackStatus,
 } from "@sori/database";
 import { requireOrgMembership, requireProjectAccess } from "./auth-helpers";
+import { AppError } from "@/lib/errors";
 
 // ============================================
 // 피드백 조회 (멤버십 필요)
@@ -90,7 +91,7 @@ export const createFeedback = createServerFn({ method: "POST" })
     await requireProjectAccess(projectId);
 
     if (!message || !type || !projectId || !email) {
-      throw new Error("Missing required fields");
+      throw new AppError("VAL_REQUIRED_FIELDS");
     }
 
     return await createFeedbackQuery({
@@ -113,7 +114,7 @@ export const updateFeedbackStatus = createServerFn({ method: "POST" })
     // 피드백 조회 후 프로젝트 접근 권한 확인
     const feedback = await getFeedbackById(data.id);
     if (!feedback) {
-      throw new Error("Feedback not found");
+      throw new AppError("RES_FEEDBACK_NOT_FOUND");
     }
     await requireProjectAccess(feedback.projectId);
 

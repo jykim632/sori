@@ -10,6 +10,7 @@ import {
 } from "@sori/database";
 import { getSessionUserId, requireOrgMembership, requireOrgAdmin } from "./auth-helpers";
 import { formatWebhookPayload } from "@/lib/webhook";
+import { AppError } from "@/lib/errors";
 
 // ============================================
 // 조직 생성 (인증 필요)
@@ -25,7 +26,7 @@ export const createOrganization = createServerFn({ method: "POST" })
     const existing = await getOrganizationBySlug(slug);
 
     if (existing) {
-      throw new Error("이미 사용 중인 URL입니다");
+      throw new AppError("VAL_DUPLICATE_SLUG");
     }
 
     // Create organization with the user as OWNER
@@ -91,7 +92,7 @@ export const updateOrganizationWebhook = createServerFn({ method: "POST" })
       try {
         new URL(webhookUrl);
       } catch {
-        throw new Error("유효한 URL을 입력해주세요");
+        throw new AppError("VAL_INVALID_URL");
       }
     }
 

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { auth } from "@/lib/auth";
+import { AppError } from "@/lib/errors";
 import {
   createReply as createReplyQuery,
   updateReply as updateReplyQuery,
@@ -13,7 +14,7 @@ async function requireAuth() {
   const request = getRequest();
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {
-    throw new Error("Unauthorized");
+    throw new AppError("AUTH_UNAUTHORIZED");
   }
   return session;
 }

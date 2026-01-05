@@ -10,6 +10,7 @@ import {
 } from "@sori/database";
 import { getOrganizationWithProjects } from "./organization";
 import { formatWebhookPayload } from "@/lib/webhook";
+import { AppError } from "@/lib/errors";
 
 // Plan limits for webhooks
 const WEBHOOK_LIMITS: Record<Plan, number> = {
@@ -36,21 +37,24 @@ export const createWebhook = createServerFn({ method: "POST" })
     try {
       new URL(url);
     } catch {
-      throw new Error("유효한 URL을 입력해주세요");
+      throw new AppError("VAL_INVALID_URL");
     }
 
     // Check plan limits
     const org = await getOrganizationWithProjects({ data: { organizationId } });
 
     if (!org) {
-      throw new Error("조직을 찾을 수 없습니다");
+      throw new AppError("RES_ORG_NOT_FOUND");
     }
 
     const webhookCount = await getWebhookCount(organizationId);
     const limit = WEBHOOK_LIMITS[org.plan as Plan] || 1;
 
     if (webhookCount >= limit) {
-      throw new Error(`${org.plan} 플랜은 최대 ${limit}개의 웹훅만 등록할 수 있습니다`);
+      throw new AppError("LIMIT_WEBHOOK_EXCEEDED", {
+        plan: org.plan,
+        limit: String(limit),
+      });
     }
 
     return await createWebhookQuery({ name, url, organizationId });
@@ -67,7 +71,7 @@ export const updateWebhook = createServerFn({ method: "POST" })
       try {
         new URL(url);
       } catch {
-        throw new Error("유효한 URL을 입력해주세요");
+        throw new AppError("VAL_INVALID_URL");
       }
     }
 
