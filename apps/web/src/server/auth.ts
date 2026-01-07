@@ -1,19 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { auth } from "@/lib/auth";
+import { getCachedSession } from "@/lib/session-cache";
 import { AppError } from "@/lib/errors";
 
 export const getSession = createServerFn({ method: "GET" }).handler(
   async () => {
-    const request = getRequest();
-    return await auth.api.getSession({ headers: request.headers });
+    return await getCachedSession();
   }
 );
 
 export const requireAuth = createServerFn({ method: "GET" }).handler(
   async () => {
-    const request = getRequest();
-    const session = await auth.api.getSession({ headers: request.headers });
+    const session = await getCachedSession();
 
     if (!session) {
       throw new AppError("AUTH_UNAUTHORIZED");

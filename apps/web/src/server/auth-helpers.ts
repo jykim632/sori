@@ -1,5 +1,4 @@
-import { getRequest } from "@tanstack/react-start/server";
-import { auth } from "@/lib/auth";
+import { getCachedSession } from "@/lib/session-cache";
 import { AppError } from "@/lib/errors";
 
 // ============================================
@@ -10,10 +9,10 @@ import { AppError } from "@/lib/errors";
 /**
  * 세션에서 userId 추출 (인증 필수)
  * 클라이언트에서 userId를 전달받지 않고 세션에서 안전하게 추출
+ * 같은 request 내에서는 캐싱된 세션 사용
  */
 export async function getSessionUserId(): Promise<string> {
-  const request = getRequest();
-  const session = await auth.api.getSession({ headers: request.headers });
+  const session = await getCachedSession();
 
   if (!session?.user?.id) {
     throw new AppError("AUTH_UNAUTHORIZED");
