@@ -175,35 +175,3 @@ export const UpdateReplyInputSchema = z.object({
 export const DeleteReplyInputSchema = z.object({
   id: z.string(),
 });
-
-// ============================================
-// Project Notification
-// ============================================
-
-export const GetNotificationSettingInputSchema = z.object({
-  projectId: z.string(),
-});
-
-export const UpdateNotificationSettingInputSchema = z.object({
-  projectId: z.string(),
-  emailEnabled: z.boolean(),
-  emailRecipients: z
-    .array(z.string().email("유효한 이메일 주소를 입력해주세요"))
-    .max(10, "이메일 수신자는 최대 10명까지 가능합니다"),
-  slackEnabled: z.boolean(),
-  slackWebhookUrl: z
-    .string()
-    .url("유효한 URL을 입력해주세요")
-    .refine(
-      (url) => {
-        try {
-          const parsed = new URL(url);
-          return parsed.hostname === "hooks.slack.com";
-        } catch {
-          return false;
-        }
-      },
-      "Slack Webhook URL만 허용됩니다 (https://hooks.slack.com/...)"
-    )
-    .nullable(),
-});
