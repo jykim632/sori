@@ -11,3 +11,4 @@ export * from "./project.ts";
 export * from "./feedback.ts";
 export * from "./webhook.ts";
 export * from "./reply.ts";
+export * from "./project-notification.ts";
