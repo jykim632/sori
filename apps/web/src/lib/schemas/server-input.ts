@@ -189,7 +189,11 @@ export const UpdateNotificationSettingInputSchema = z.object({
   emailEnabled: z.boolean(),
   emailRecipients: z
     .array(z.string().email("유효한 이메일 주소를 입력해주세요"))
-    .max(10, "이메일 수신자는 최대 10명까지 가능합니다"),
+    .max(10, "이메일 수신자는 최대 10명까지 가능합니다")
+    .refine(
+      (emails) => new Set(emails).size === emails.length,
+      "중복된 이메일 주소가 있습니다"
+    ),
   slackEnabled: z.boolean(),
   slackWebhookUrl: z
     .string()

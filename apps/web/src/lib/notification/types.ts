@@ -11,12 +11,6 @@ export interface NotificationSender {
   send(context: NotificationContext): Promise<void>;
 }
 
-export interface NotificationResult {
-  channel: "email" | "slack";
-  success: boolean;
-  error?: string;
-}
-
 export interface TypeInfo {
   emoji: string;
   label: string;

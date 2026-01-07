@@ -10,11 +10,20 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#039;");
 }
 
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ["http:", "https:"].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
 export function generateEmailHtml(context: NotificationContext): string {
   const { feedback, project, dashboardUrl } = context;
   const typeInfo: TypeInfo = TYPE_INFO_MAP[feedback.type];
   const rawPageUrl = feedback.metadata?.url;
-  const pageUrl = typeof rawPageUrl === "string" ? rawPageUrl : undefined;
+  const pageUrl = typeof rawPageUrl === "string" && isSafeUrl(rawPageUrl) ? rawPageUrl : undefined;
 
   return `
 <!DOCTYPE html>
@@ -108,5 +117,6 @@ export function generateEmailHtml(context: NotificationContext): string {
 export function generateEmailSubject(context: NotificationContext): string {
   const { feedback, project } = context;
   const typeInfo = TYPE_INFO_MAP[feedback.type];
-  return `[${project.name}] ${typeInfo.emoji} ${typeInfo.label}`;
+  const safeName = project.name.replace(/[\r\n]/g, " ");
+  return `[${safeName}] ${typeInfo.emoji} ${typeInfo.label}`;
 }

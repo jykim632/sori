@@ -21,6 +21,10 @@ export function createEmailSender(recipients: string[]): NotificationSender {
         throw new Error("Email notification is not configured (missing RESEND_API_KEY)");
       }
 
+      if (recipients.length === 0) {
+        throw new Error("No email recipients configured");
+      }
+
       const subject = generateEmailSubject(context);
       const html = generateEmailHtml(context);
 
