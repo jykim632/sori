@@ -16,6 +16,7 @@ import {
   Check,
   RotateCcw,
   ArrowUpDown,
+  RefreshCw,
 } from "lucide-react";
 import {
   type FeedbackSearchParams,
@@ -314,11 +315,16 @@ function FeedbacksPage() {
               </button>
             </div>
 
-            {/* 결과 수 */}
+            {/* 새로고침 + 결과 수 */}
             <div className="ml-auto text-sm text-gray-400 flex items-center gap-2">
-              {isRouterLoading && (
-                <div className="w-3 h-3 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
-              )}
+              <button
+                onClick={() => router.invalidate()}
+                disabled={isRouterLoading}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                title="새로고침"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRouterLoading ? "animate-spin" : ""}`} />
+              </button>
               {pagination.total}개
             </div>
           </div>
@@ -512,11 +518,15 @@ function FeedbacksPage() {
           {
             key: "date",
             header: "날짜",
-            render: (feedback) => (
-              <span className="text-sm text-gray-400">
-                {new Date(feedback.createdAt).toLocaleDateString("ko-KR")}
-              </span>
-            ),
+            render: (feedback) => {
+              const date = new Date(feedback.createdAt);
+              return (
+                <div className="text-sm text-gray-400">
+                  <div>{date.toLocaleDateString("ko-KR")}</div>
+                  <div className="text-xs">{date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</div>
+                </div>
+              );
+            },
           },
           {
             key: "actions",

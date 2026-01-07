@@ -9,7 +9,7 @@ const WIDGET_SCRIPT = `
   const config = window.SoriWidgetConfig || {};
 
   const projectId = script?.dataset?.projectId || config.projectId;
-  const apiUrl = script?.dataset?.apiUrl || config.apiUrl || 'https://app.sori.life';
+  const apiUrl = script?.dataset?.apiUrl || config.apiUrl || 'https://web.sori.life';
   const position = script?.dataset?.position || config.position || 'bottom-right';
   const primaryColor = script?.dataset?.color || config.primaryColor || '#4f46e5';
   const buttonText = script?.dataset?.text || config.buttonText || 'Feedback';

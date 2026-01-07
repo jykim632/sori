@@ -18,6 +18,7 @@ export function createSlackSender(webhookUrl: string): NotificationSender {
         .filter(Boolean)
         .join("\n");
 
+      console.log("[slack] sending to webhook, project:", project.name);
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -27,8 +28,10 @@ export function createSlackSender(webhookUrl: string): NotificationSender {
       });
 
       if (!response.ok) {
-        throw new Error(`Slack webhook failed: ${response.status} ${response.statusText}`);
+        const text = await response.text().catch(() => "");
+        throw new Error(`Slack webhook failed: ${response.status} ${response.statusText} - ${text}`);
       }
+      console.log("[slack] sent successfully");
     },
   };
 }

@@ -3,10 +3,7 @@ import type { NotificationContext, NotificationSender } from "./types";
 import { createEmailSender } from "./email";
 import { createSlackSender } from "./slack";
 
-export async function sendProjectNotifications(
-  setting: ProjectNotificationSetting,
-  context: NotificationContext
-): Promise<void> {
+function collectSenders(setting: ProjectNotificationSetting): NotificationSender[] {
   const senders: NotificationSender[] = [];
 
   if (setting.emailEnabled && setting.emailRecipients.length > 0) {
@@ -17,12 +14,13 @@ export async function sendProjectNotifications(
     senders.push(createSlackSender(setting.slackWebhookUrl));
   }
 
-  if (senders.length === 0) {
-    return;
-  }
+  return senders;
+}
 
-  const results = await Promise.allSettled(senders.map((s) => s.send(context)));
-
+function logFailures(
+  results: PromiseSettledResult<void>[],
+  senders: NotificationSender[]
+): void {
   results.forEach((result, i) => {
     if (result.status === "rejected") {
       console.error(
@@ -31,4 +29,18 @@ export async function sendProjectNotifications(
       );
     }
   });
+}
+
+export async function sendProjectNotifications(
+  setting: ProjectNotificationSetting,
+  context: NotificationContext
+): Promise<void> {
+  const senders = collectSenders(setting);
+
+  if (senders.length === 0) {
+    return;
+  }
+
+  const results = await Promise.allSettled(senders.map((s) => s.send(context)));
+  logFailures(results, senders);
 }

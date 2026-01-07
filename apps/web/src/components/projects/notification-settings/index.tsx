@@ -103,7 +103,12 @@ export function NotificationSettings({ projectId }: NotificationSettingsProps) {
       return;
     }
 
-    if (slackEnabled && slackWebhookUrl && !validateSlackUrl(slackWebhookUrl)) {
+    if (slackEnabled && !slackWebhookUrl) {
+      setError("Slack 알림을 활성화하려면 Webhook URL을 입력해주세요");
+      return;
+    }
+
+    if (slackEnabled && !validateSlackUrl(slackWebhookUrl)) {
       setError("유효하지 않은 Slack Webhook URL입니다");
       return;
     }
@@ -182,6 +187,7 @@ export function NotificationSettings({ projectId }: NotificationSettingsProps) {
         {/* Save Button */}
         <div className="flex justify-end">
           <button
+            type="button"
             onClick={handleSave}
             disabled={saving || emailErrors.length > 0 || !!slackError}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

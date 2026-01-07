@@ -189,6 +189,7 @@ function ProjectsPage() {
                   to="/admin/projects/$projectId"
                   params={{ projectId: project.id }}
                   search={{ org }}
+                  preload="intent"
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                 >
                   <Palette className="w-4 h-4" />
