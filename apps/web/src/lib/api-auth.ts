@@ -67,7 +67,7 @@ export async function authenticateApiKey(request: Request): Promise<ApiAuthResul
 
 // 어드민 API용 CORS - 허용된 Origin만
 const ALLOWED_ADMIN_ORIGINS = [
-  "https://app.sori.life",
+  "https://web.sori.life",
   "https://sori.life",
   // 개발 환경
   ...(process.env.NODE_ENV === "development" ? ["http://localhost:3000"] : []),

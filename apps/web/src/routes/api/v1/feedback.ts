@@ -201,8 +201,14 @@ export const Route = createFileRoute("/api/v1/feedback")({
 
           // Send project notifications (fire and forget)
           const notificationSetting = await getActiveNotificationSetting(projectId);
+          console.log("[notification] projectId:", projectId, "setting:", notificationSetting ? {
+            emailEnabled: notificationSetting.emailEnabled,
+            emailRecipients: notificationSetting.emailRecipients,
+            slackEnabled: notificationSetting.slackEnabled,
+            slackWebhookUrl: notificationSetting.slackWebhookUrl ? "[SET]" : null,
+          } : null);
           if (notificationSetting) {
-            const appUrl = process.env.APP_URL || "https://web.sori.life";
+            const appUrl = process.env.APP_URL || "https://app.sori.life";
             sendProjectNotifications(notificationSetting, {
               feedback: {
                 id: feedback.id,
