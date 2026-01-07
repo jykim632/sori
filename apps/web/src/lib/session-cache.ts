@@ -13,19 +13,15 @@ const sessionCache = new WeakMap<Request, Promise<Session | null>>();
 export async function getCachedSession(): Promise<Session | null> {
   const request = getRequest();
 
+  // 서버 컨텍스트 외부에서 호출된 경우 null 반환
+  if (!request) {
+    return null;
+  }
+
   if (!sessionCache.has(request)) {
     const promise = auth.api.getSession({ headers: request.headers });
     sessionCache.set(request, promise);
   }
 
   return sessionCache.get(request)!;
-}
-
-/**
- * 캐싱된 세션에서 userId 추출
- * 인증되지 않은 경우 null 반환
- */
-export async function getCachedUserId(): Promise<string | null> {
-  const session = await getCachedSession();
-  return session?.user?.id ?? null;
 }
