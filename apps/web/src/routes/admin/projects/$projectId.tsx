@@ -3,6 +3,7 @@ import { useState } from "react";
 import { getProjectById, updateProject, generateApiKey, revokeApiKey, deleteProject } from "@/server/projects";
 import { getSession } from "@/server/auth";
 import { ArrowLeft, Check, Palette, Save, RotateCcw, Eye, Key, Copy, RefreshCw, Trash2, EyeOff, AlertTriangle, Settings, Globe } from "lucide-react";
+import { NotificationSettings } from "@/components/projects/notification-settings";
 
 type ThemePreset = "default" | "minimal" | "rounded";
 type SizeToken = "sm" | "md" | "lg";
@@ -555,6 +556,9 @@ function ProjectSettingsPage() {
                 </div>
               )}
             </div>
+
+            {/* Notification Settings */}
+            <NotificationSettings projectId={project.id} />
 
             {/* Theme Presets */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
