@@ -35,6 +35,7 @@ import {
   CreateReplySchema,
   UpdateReplySchema,
 } from "./schemas/reply.ts";
+import { ProjectNotificationSettingSchema } from "./schemas/project-notification.ts";
 
 // Enum Types
 export type MemberRole = z.infer<typeof MemberRoleSchema>;
@@ -72,6 +73,8 @@ export type AuthorType = z.infer<typeof AuthorTypeSchema>;
 export type Reply = z.infer<typeof ReplySchema>;
 export type CreateReply = z.infer<typeof CreateReplySchema>;
 export type UpdateReply = z.infer<typeof UpdateReplySchema>;
+
+export type ProjectNotificationSetting = z.infer<typeof ProjectNotificationSettingSchema>;
 
 // Extended types with relations
 export type OrganizationWithMembers = Organization & {
