@@ -1,5 +1,13 @@
 import { query, queryOne, queryReturning, generateId } from "../client.ts";
-import type { ProjectNotificationSetting, UpdateProjectNotificationSetting } from "../types.ts";
+import type { ProjectNotificationSetting } from "../types.ts";
+
+interface UpsertNotificationSettingInput {
+  projectId: string;
+  emailEnabled: boolean;
+  emailRecipients: string[];
+  slackEnabled: boolean;
+  slackWebhookUrl: string | null;
+}
 
 // 프로젝트 알림 설정 조회
 export async function getProjectNotificationSetting(
@@ -24,7 +32,7 @@ export async function getProjectNotificationSetting(
 
 // 프로젝트 알림 설정 저장 (upsert)
 export async function upsertProjectNotificationSetting(
-  input: UpdateProjectNotificationSetting
+  input: UpsertNotificationSettingInput
 ): Promise<ProjectNotificationSetting> {
   const { projectId, emailEnabled, emailRecipients, slackEnabled, slackWebhookUrl } = input;
   const id = generateId();
