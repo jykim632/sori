@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Mail, Clock, Globe, ExternalLink, MessageCircle, Lock, Trash2, Send } from "lucide-react";
+import { X, Mail, Clock, Globe, ExternalLink, MessageCircle, Lock, Trash2, Send, Link2, Check } from "lucide-react";
 import { createReply, getReplies, deleteReply as deleteReplyFn } from "@/server/reply";
 import { getTypeIcon, getTypeLabel, getStatusLabel, getAuthorTypeLabel } from "./utils";
 import type { FeedbackWithProject, Reply, FeedbackMetadata } from "./types";
@@ -14,9 +14,24 @@ export function FeedbackDetailModal({ feedback, onClose, onStatusChange }: Props
   const [replies, setReplies] = useState<Reply[]>([]);
   const [newReplyContent, setNewReplyContent] = useState("");
   const [isInternalReply, setIsInternalReply] = useState(false);
+  const [sendEmail, setSendEmail] = useState(true); // 기본값: 이메일 발송
   const [creatingReply, setCreatingReply] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState(true);
   const [deletingReplyId, setDeletingReplyId] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleCopyTicketLink = async () => {
+    if (!feedback.token) return;
+
+    const ticketUrl = `${window.location.origin}/f/${feedback.token}`;
+    try {
+      await navigator.clipboard.writeText(ticketUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
 
   useEffect(() => {
     const loadReplies = async () => {
@@ -43,11 +58,13 @@ export function FeedbackDetailModal({ feedback, onClose, onStatusChange }: Props
           feedbackId: feedback.id,
           content: newReplyContent.trim(),
           isInternal: isInternalReply,
+          sendEmail: sendEmail && !isInternalReply && !!feedback.email,
         },
       });
       setReplies([...replies, newReply as Reply]);
       setNewReplyContent("");
       setIsInternalReply(false);
+      setSendEmail(true);
     } catch (error) {
       console.error("Failed to create reply:", error);
       alert("답변 등록에 실패했습니다.");
@@ -159,6 +176,35 @@ export function FeedbackDetailModal({ feedback, onClose, onStatusChange }: Props
             </div>
           </div>
 
+          {/* Customer Ticket Link */}
+          {feedback.token && (
+            <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg">
+              <Link2 className="w-4 h-4 text-indigo-600" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-indigo-900">고객 확인 링크</p>
+                <p className="text-xs text-indigo-600 truncate">
+                  {`${typeof window !== "undefined" ? window.location.origin : ""}/f/${feedback.token}`}
+                </p>
+              </div>
+              <button
+                onClick={handleCopyTicketLink}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-700 bg-indigo-100 hover:bg-indigo-200 rounded-lg transition-colors"
+              >
+                {linkCopied ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    복사됨
+                  </>
+                ) : (
+                  <>
+                    <Link2 className="w-4 h-4" />
+                    링크 복사
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
           {/* Metadata */}
           {metadata && (
             <div>
@@ -267,25 +313,44 @@ export function FeedbackDetailModal({ feedback, onClose, onStatusChange }: Props
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 rows={3}
               />
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isInternalReply}
-                    onChange={(e) => setIsInternalReply(e.target.checked)}
-                    className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <Lock className="w-4 h-4 text-amber-600" />
-                  <span>내부 메모 (API에 노출되지 않음)</span>
-                </label>
-                <button
-                  type="submit"
-                  disabled={creatingReply || !newReplyContent.trim()}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                  {creatingReply ? "등록 중..." : "답변 등록"}
-                </button>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isInternalReply}
+                      onChange={(e) => {
+                        setIsInternalReply(e.target.checked);
+                        if (e.target.checked) setSendEmail(false);
+                      }}
+                      className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    <Lock className="w-4 h-4 text-amber-600" />
+                    <span>내부 메모</span>
+                  </label>
+                  {feedback.email && !isInternalReply && (
+                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={sendEmail}
+                        onChange={(e) => setSendEmail(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <Mail className="w-4 h-4 text-blue-600" />
+                      <span>고객에게 이메일 알림</span>
+                    </label>
+                  )}
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={creatingReply || !newReplyContent.trim()}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                    {creatingReply ? "등록 중..." : "답변 등록"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

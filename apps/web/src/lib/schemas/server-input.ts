@@ -165,6 +165,7 @@ export const CreateReplyInputSchema = z.object({
   feedbackId: z.string(),
   content: z.string(),
   isInternal: z.boolean().optional(),
+  sendEmail: z.boolean().optional(), // 고객에게 이메일 알림 발송
 });
 
 export const UpdateReplyInputSchema = z.object({

@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { AuthorTypeSchema } from "./enums.ts";
 
-// Author Type enum
-export const AuthorTypeSchema = z.enum(["USER", "ADMIN", "API"]);
+// Re-export for backwards compatibility
+export { AuthorTypeSchema };
 
 // Reply 모델 스키마
 export const ReplySchema = z.object({
