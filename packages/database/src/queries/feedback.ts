@@ -22,7 +22,8 @@ export async function getFeedbacks(
   let sql = `
     SELECT
       f.id, f.type, f.message, f.email, f.status, f.priority, f.metadata,
-      f.project_id as "projectId", f.privacy_agreed_at as "privacyAgreedAt",
+      f.project_id as "projectId", f.token, f.token_accessed_at as "tokenAccessedAt",
+      f.privacy_agreed_at as "privacyAgreedAt",
       f.created_at as "createdAt", f.resolved_at as "resolvedAt",
       json_build_object(
         'id', p.id,
@@ -74,7 +75,8 @@ export async function createFeedback(input: CreateFeedbackInput): Promise<Feedba
     VALUES ($1, $2, $3, $4, $5, $6, 'OPEN', $7, now())
     RETURNING
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      project_id as "projectId", token, token_accessed_at as "tokenAccessedAt",
+      privacy_agreed_at as "privacyAgreedAt",
       created_at as "createdAt", resolved_at as "resolvedAt"
   `;
 
@@ -106,7 +108,8 @@ export async function updateFeedbackStatus(
     WHERE id = $2
     RETURNING
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      project_id as "projectId", token, token_accessed_at as "tokenAccessedAt",
+      privacy_agreed_at as "privacyAgreedAt",
       created_at as "createdAt", resolved_at as "resolvedAt"
   `;
 
@@ -186,7 +189,8 @@ export async function getFeedbacksWithPagination(
   const dataSql = `
     SELECT
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      project_id as "projectId", token, token_accessed_at as "tokenAccessedAt",
+      privacy_agreed_at as "privacyAgreedAt",
       created_at as "createdAt", resolved_at as "resolvedAt"
     FROM feedback
     WHERE ${whereClause}
@@ -212,13 +216,41 @@ export async function getFeedbackById(id: string): Promise<Feedback | null> {
   const sql = `
     SELECT
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      project_id as "projectId", token, token_accessed_at as "tokenAccessedAt",
+      privacy_agreed_at as "privacyAgreedAt",
       created_at as "createdAt", resolved_at as "resolvedAt"
     FROM feedback
     WHERE id = $1
   `;
 
   return queryOne<Feedback>(sql, [id]);
+}
+
+// 단일 피드백 조회 (with project)
+export async function getFeedbackWithProjectById(
+  id: string
+): Promise<FeedbackWithProject | null> {
+  const sql = `
+    SELECT
+      f.id, f.type, f.message, f.email, f.status, f.priority, f.metadata,
+      f.project_id as "projectId", f.token, f.token_accessed_at as "tokenAccessedAt",
+      f.privacy_agreed_at as "privacyAgreedAt",
+      f.created_at as "createdAt", f.resolved_at as "resolvedAt",
+      json_build_object(
+        'id', p.id,
+        'name', p.name,
+        'allowedOrigins', p.allowed_origins,
+        'widgetConfig', p.widget_config,
+        'organizationId', p.organization_id,
+        'createdAt', p.created_at,
+        'updatedAt', p.updated_at
+      ) as project
+    FROM feedback f
+    JOIN project p ON f.project_id = p.id
+    WHERE f.id = $1
+  `;
+
+  return queryOne<FeedbackWithProject>(sql, [id]);
 }
 
 // 단일 피드백 조회 (with replies)
@@ -228,7 +260,8 @@ export async function getFeedbackWithReplies(
   const feedbackSql = `
     SELECT
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      project_id as "projectId", token, token_accessed_at as "tokenAccessedAt",
+      privacy_agreed_at as "privacyAgreedAt",
       created_at as "createdAt", resolved_at as "resolvedAt"
     FROM feedback
     WHERE id = $1
@@ -289,7 +322,8 @@ export async function updateFeedback(input: UpdateFeedbackInput): Promise<Feedba
     // Nothing to update, return current feedback
     const current = await queryOne<Feedback>(
       `SELECT id, type, message, email, status, priority, metadata,
-       project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+       project_id as "projectId", token, token_accessed_at as "tokenAccessedAt",
+       privacy_agreed_at as "privacyAgreedAt",
        created_at as "createdAt", resolved_at as "resolvedAt"
        FROM feedback WHERE id = $1`,
       [id]
@@ -306,7 +340,8 @@ export async function updateFeedback(input: UpdateFeedbackInput): Promise<Feedba
     WHERE id = $${paramIndex}
     RETURNING
       id, type, message, email, status, priority, metadata,
-      project_id as "projectId", privacy_agreed_at as "privacyAgreedAt",
+      project_id as "projectId", token, token_accessed_at as "tokenAccessedAt",
+      privacy_agreed_at as "privacyAgreedAt",
       created_at as "createdAt", resolved_at as "resolvedAt"
   `;
 
@@ -423,7 +458,8 @@ export async function getFeedbacksFiltered(
   const dataSql = `
     SELECT
       f.id, f.type, f.message, f.email, f.status, f.priority, f.metadata,
-      f.project_id as "projectId", f.privacy_agreed_at as "privacyAgreedAt",
+      f.project_id as "projectId", f.token, f.token_accessed_at as "tokenAccessedAt",
+      f.privacy_agreed_at as "privacyAgreedAt",
       f.created_at as "createdAt", f.resolved_at as "resolvedAt",
       json_build_object(
         'id', p.id,
@@ -452,4 +488,82 @@ export async function getFeedbacksFiltered(
       totalPages: Math.ceil(total / limit),
     },
   };
+}
+
+// ============================================
+// 고객용 토큰 기반 조회
+// ============================================
+
+// 토큰 만료 기간 (6개월)
+const TOKEN_EXPIRY_MONTHS = 6;
+
+// 토큰으로 피드백 조회 (프로젝트 정보 포함)
+export async function getFeedbackByToken(
+  token: string
+): Promise<(Feedback & { project: { id: string; name: string } }) | null> {
+  const sql = `
+    SELECT
+      f.id, f.type, f.message, f.email, f.status, f.priority, f.metadata,
+      f.project_id as "projectId", f.token, f.token_accessed_at as "tokenAccessedAt",
+      f.privacy_agreed_at as "privacyAgreedAt",
+      f.created_at as "createdAt", f.resolved_at as "resolvedAt",
+      json_build_object('id', p.id, 'name', p.name) as project
+    FROM feedback f
+    JOIN project p ON f.project_id = p.id
+    WHERE f.token = $1
+  `;
+
+  return queryOne(sql, [token]);
+}
+
+// 토큰 접근 시간 갱신
+export async function updateTokenAccessedAt(token: string): Promise<void> {
+  await query(
+    "UPDATE feedback SET token_accessed_at = now() WHERE token = $1",
+    [token]
+  );
+}
+
+// 토큰 만료 여부 확인
+export function isTokenExpired(feedback: Feedback): boolean {
+  const lastAccess = feedback.tokenAccessedAt ?? feedback.createdAt;
+  const expiryDate = new Date(lastAccess);
+  expiryDate.setMonth(expiryDate.getMonth() + TOKEN_EXPIRY_MONTHS);
+  return new Date() > expiryDate;
+}
+
+// 토큰으로 피드백 + 답글 조회 (고객용 - isInternal=false만)
+export async function getFeedbackWithRepliesByToken(
+  token: string
+): Promise<FeedbackWithReplies | null> {
+  const feedbackSql = `
+    SELECT
+      f.id, f.type, f.message, f.email, f.status, f.priority, f.metadata,
+      f.project_id as "projectId", f.token, f.token_accessed_at as "tokenAccessedAt",
+      f.privacy_agreed_at as "privacyAgreedAt",
+      f.created_at as "createdAt", f.resolved_at as "resolvedAt"
+    FROM feedback f
+    WHERE f.token = $1
+  `;
+
+  const repliesSql = `
+    SELECT
+      r.id, r.content, r.feedback_id as "feedbackId",
+      r.author_id as "authorId", r.author_name as "authorName",
+      r.author_type as "authorType", r.is_internal as "isInternal",
+      r.created_at as "createdAt", r.updated_at as "updatedAt"
+    FROM reply r
+    JOIN feedback f ON r.feedback_id = f.id
+    WHERE f.token = $1 AND r.is_internal = false
+    ORDER BY r.created_at ASC
+  `;
+
+  const [feedback, replies] = await Promise.all([
+    queryOne<Feedback>(feedbackSql, [token]),
+    query<Reply>(repliesSql, [token]),
+  ]);
+
+  if (!feedback) return null;
+
+  return { ...feedback, replies };
 }

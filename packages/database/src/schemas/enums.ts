@@ -30,3 +30,10 @@ export const WebhookTypeSchema = z.enum([
   "TELEGRAM",
   "CUSTOM",
 ]);
+
+// 답변 작성자 타입
+export const AuthorTypeSchema = z.enum([
+  "CUSTOMER", // 피드백 작성자 (최종 사용자)
+  "ADMIN", // Sori 사용자 (B2B 고객사 담당자)
+  "API", // API를 통한 자동 답변
+]);

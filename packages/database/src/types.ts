@@ -12,6 +12,7 @@ import {
   FeedbackStatusSchema,
   PrioritySchema,
   WebhookTypeSchema,
+  AuthorTypeSchema,
 } from "./schemas/enums.ts";
 
 // Models
@@ -30,7 +31,6 @@ import {
 } from "./schemas/feedback.ts";
 import { WebhookSchema, CreateWebhookSchema, UpdateWebhookSchema } from "./schemas/webhook.ts";
 import {
-  AuthorTypeSchema,
   ReplySchema,
   CreateReplySchema,
   UpdateReplySchema,
