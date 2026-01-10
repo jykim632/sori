@@ -222,6 +222,12 @@ export function getStyles(
       height: 48px;
       margin-bottom: 12px;
     }
+
+    .sori-error {
+      color: #dc2626;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
   `;
 }
 
