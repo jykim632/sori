@@ -164,6 +164,9 @@ importers:
       '@types/pg':
         specifier: ^8.15.4
         version: 8.16.0
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.4(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.3.0)(lightningcss@1.30.2)(tsx@4.21.0)
 
   packages/react:
     dependencies:
