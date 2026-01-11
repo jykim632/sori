@@ -6,6 +6,16 @@ import {
   createReply,
   getProjectWithWebhooks,
 } from "@sori/database";
+import { z } from "zod";
+
+// Zod schema for customer reply request body
+const CustomerReplySchema = z.object({
+  content: z
+    .string({ required_error: "Content is required" })
+    .trim()
+    .min(1, "Content cannot be empty")
+    .max(5000, "Content too long (max 5000 characters)"),
+});
 
 // Rate limiting (in-memory, per IP + token)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -134,14 +144,13 @@ export const Route = createFileRoute("/api/v1/tickets/$token/replies")({
             );
           }
 
-          // Parse request body
-          const body = await request.json();
-          const { content } = body;
-
-          // Validate content
-          if (!content || typeof content !== "string") {
+          // Parse and validate request body with Zod
+          let body: unknown;
+          try {
+            body = await request.json();
+          } catch {
             return new Response(
-              JSON.stringify({ error: "Content is required" }),
+              JSON.stringify({ error: "Invalid JSON body" }),
               {
                 status: 400,
                 headers: { "Content-Type": "application/json", ...CORS_HEADERS },
@@ -149,11 +158,11 @@ export const Route = createFileRoute("/api/v1/tickets/$token/replies")({
             );
           }
 
-          const trimmedContent = content.trim();
-
-          if (trimmedContent.length === 0) {
+          const parseResult = CustomerReplySchema.safeParse(body);
+          if (!parseResult.success) {
+            const errorMessage = parseResult.error.errors[0]?.message || "Invalid request";
             return new Response(
-              JSON.stringify({ error: "Content cannot be empty" }),
+              JSON.stringify({ error: errorMessage }),
               {
                 status: 400,
                 headers: { "Content-Type": "application/json", ...CORS_HEADERS },
@@ -161,15 +170,7 @@ export const Route = createFileRoute("/api/v1/tickets/$token/replies")({
             );
           }
 
-          if (trimmedContent.length > 5000) {
-            return new Response(
-              JSON.stringify({ error: "Content too long (max 5000 characters)" }),
-              {
-                status: 400,
-                headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-              }
-            );
-          }
+          const trimmedContent = parseResult.data.content;
 
           // Create reply (XSS protection applied on display, not storage)
           const reply = await createReply({
