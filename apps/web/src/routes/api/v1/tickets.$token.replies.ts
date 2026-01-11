@@ -252,7 +252,7 @@ async function sendAdminNotification(
                 { type: "mrkdwn", text: `From: ${feedback.email}` },
                 {
                   type: "mrkdwn",
-                  text: `<${process.env.APP_URL || "https://app.sori.life"}/admin/feedbacks?id=${feedback.id}|View in Dashboard>`,
+                  text: `<${process.env.APP_URL || "https://web.sori.life"}/admin/feedbacks?id=${feedback.id}|View in Dashboard>`,
                 },
               ],
             },
@@ -281,7 +281,7 @@ async function sendAdminNotification(
             content: replyContent,
             createdAt: new Date().toISOString(),
           },
-          url: `${process.env.APP_URL || "https://app.sori.life"}/admin/feedbacks?id=${feedback.id}`,
+          url: `${process.env.APP_URL || "https://web.sori.life"}/admin/feedbacks?id=${feedback.id}`,
         };
       }
 

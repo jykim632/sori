@@ -6,6 +6,12 @@ import { icons } from "./icons";
 import { resolveTheme, THEME_PRESETS } from "./themes";
 import { isValidEmail } from "./validation";
 
+function escapeHtml(text: string): string {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 const DEFAULT_CONFIG: Required<Omit<SoriConfig, "projectId">> = {
   apiUrl: "https://web.sori.life",
   position: "bottom-right",
@@ -74,7 +80,7 @@ export function createWidget(userConfig: CreateWidgetOptions): SoriInstance {
   container.innerHTML = `
     <div class="sori-panel">
       <div class="sori-header">
-        <div class="sori-greeting">${config.greeting}</div>
+        <div class="sori-greeting">${escapeHtml(config.greeting)}</div>
       </div>
       <div class="sori-body">
         <div class="sori-form">

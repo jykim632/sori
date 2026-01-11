@@ -52,7 +52,7 @@ export const createReply = createServerFn({ method: "POST" })
     if (data.sendEmail && !data.isInternal) {
       const feedback = await getFeedbackWithProjectById(data.feedbackId);
       if (feedback?.email && feedback.token) {
-        const appUrl = process.env.APP_URL || "https://app.sori.life";
+        const appUrl = process.env.APP_URL || "https://web.sori.life";
         const ticketUrl = `${appUrl}/f/${feedback.token}`;
 
         // Fire and forget - don't block on email

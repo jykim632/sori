@@ -217,10 +217,10 @@ WHERE COALESCE(token_accessed_at, created_at) < NOW() - INTERVAL '6 months'
 ### URL 구조
 
 ```
-https://app.sori.life/f/{token}
+https://web.sori.life/f/{token}
 
 예시:
-https://app.sori.life/f/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+https://web.sori.life/f/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 ### 보안
@@ -427,7 +427,7 @@ apps/web/src/routes/
 
 전체 내용을 확인하고 추가 질문을 남기시려면 아래 버튼을 클릭해주세요.
 
-[답변 확인하기] → https://app.sori.life/f/{token}
+[답변 확인하기] → https://web.sori.life/f/{token}
 
 감사합니다.
 {프로젝트명} 팀
@@ -453,7 +453,7 @@ apps/web/src/routes/
     "content": "추가 질문 내용...",
     "createdAt": "2026-01-10T15:30:00Z"
   },
-  "url": "https://app.sori.life/admin/feedbacks?id=..."
+  "url": "https://web.sori.life/admin/feedbacks?id=..."
 }
 ```
 

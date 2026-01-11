@@ -6,7 +6,7 @@
 
 - **인증**: Project 단위 API 키 (Bearer Token)
 - **Rate Limit**: 100 requests/minute per API key
-- **Base URL**: `https://app.sori.life/api/v1`
+- **Base URL**: `https://web.sori.life/api/v1`
 
 ## API 키 발급
 
@@ -24,7 +24,7 @@ sk_live_abc123xyz789...
 
 ```bash
 curl -H "Authorization: Bearer sk_live_your_api_key" \
-  https://app.sori.life/api/v1/feedbacks
+  https://web.sori.life/api/v1/feedbacks
 ```
 
 ## 엔드포인트
@@ -258,7 +258,7 @@ Rate limit 초과 시:
 
 ```javascript
 const API_KEY = 'sk_live_your_api_key';
-const BASE_URL = 'https://app.sori.life/api/v1';
+const BASE_URL = 'https://web.sori.life/api/v1';
 
 // 피드백 목록 조회
 const response = await fetch(`${BASE_URL}/feedbacks?status=OPEN`, {
@@ -288,7 +288,7 @@ await fetch(`${BASE_URL}/feedbacks/${feedbackId}/replies`, {
 import requests
 
 API_KEY = 'sk_live_your_api_key'
-BASE_URL = 'https://app.sori.life/api/v1'
+BASE_URL = 'https://web.sori.life/api/v1'
 headers = {'Authorization': f'Bearer {API_KEY}'}
 
 # 피드백 목록 조회

@@ -46,7 +46,7 @@ sori/
 │   │       ├── dev.ts          # 로컬 개발 서버
 │   │       └── widget.ts       # GET /widget.js
 │   │
-│   └── web/                    # 어드민 + API (app.sori.life)
+│   └── web/                    # 어드민 + API (web.sori.life)
 │       ├── src/
 │       │   ├── routes/         # 페이지 라우트 (파일 기반)
 │       │   │   ├── api/auth/   # better-auth 핸들러
@@ -339,14 +339,14 @@ TanStack Server Functions 사용:
 | `data-position` | X | `bottom-right` | 위치 (bottom-right, bottom-left, top-right, top-left) |
 | `data-color` | X | `#4f46e5` | 테마 색상 (HEX) |
 | `data-text` | X | `Feedback` | 버튼 텍스트 |
-| `data-api-url` | X | `https://app.sori.life` | API URL (자동 감지) |
+| `data-api-url` | X | `https://web.sori.life` | API URL (자동 감지) |
 
 ### 위젯 동작
 1. 스크립트 로드 시 data 속성 또는 `window.SoriWidgetConfig` 읽기
 2. CSS 인라인 주입
 3. 플로팅 버튼 렌더링
 4. 클릭 시 피드백 폼 표시
-5. 제출 시 `app.sori.life/api/v1/feedback`로 POST
+5. 제출 시 `web.sori.life/api/v1/feedback`로 POST
 
 ### 위젯 API
 ```javascript
@@ -609,7 +609,7 @@ function escapeHtml(str: string): string {
 ```bash
 DATABASE_URL=postgresql://...
 BETTER_AUTH_SECRET=your-secret-key-min-32-chars
-BETTER_AUTH_URL=https://app.sori.life
+BETTER_AUTH_URL=https://web.sori.life
 
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...

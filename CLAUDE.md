@@ -87,7 +87,7 @@ packages/
 
 apps/
 ├── cdn/        # Widget CDN - cdn.sori.life (S3 + CloudFront, static only)
-└── web/        # Admin + API - app.sori.life (TanStack Start + React 19)
+└── web/        # Admin + API - web.sori.life (TanStack Start + React 19)
 ```
 
 ### Tech Stack
@@ -117,7 +117,7 @@ Organization (tenant)
 
 ### Widget Integration
 
-The widget is served from `cdn.sori.life/widget.js` and submits to `app.sori.life/api/v1/feedback`.
+The widget is served from `cdn.sori.life/widget.js` and submits to `web.sori.life/api/v1/feedback`.
 
 ```html
 <script
