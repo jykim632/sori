@@ -36,8 +36,13 @@ export async function sendCustomerReplyNotification(
     const subject = generateCustomerReplyEmailSubject(context);
     const html = generateCustomerReplyEmailHtml(context);
 
+    // Sanitize project name to prevent email header injection (CRLF)
+    const sanitizedProjectName = context.project.name
+      .replace(/[\r\n]/g, "")
+      .trim() || "Sori";
+
     const { error } = await resend.emails.send({
-      from: `${context.project.name} <${FROM_EMAIL}>`,
+      from: `${sanitizedProjectName} <${FROM_EMAIL}>`,
       to: customerEmail,
       subject,
       html,
