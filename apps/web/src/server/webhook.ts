@@ -12,6 +12,7 @@ import { getOrganizationWithProjects } from "./organization";
 import { formatWebhookPayload } from "@/lib/webhook";
 import { AppError } from "@/lib/errors";
 import { zodValidator } from "@/lib/zod-validator";
+import { requireOrgMembership } from "./auth-helpers";
 import {
   GetWebhooksInputSchema,
   CreateWebhookInputSchema,
@@ -32,6 +33,7 @@ const WEBHOOK_LIMITS: Record<Plan, number> = {
 export const getWebhooks = createServerFn({ method: "GET" })
   .inputValidator(zodValidator(GetWebhooksInputSchema))
   .handler(async ({ data }) => {
+    await requireOrgMembership(data.organizationId);
     return await getWebhooksQuery(data.organizationId);
   });
 
@@ -40,6 +42,9 @@ export const createWebhook = createServerFn({ method: "POST" })
   .inputValidator(zodValidator(CreateWebhookInputSchema))
   .handler(async ({ data }) => {
     const { organizationId, name, url } = data;
+
+    // 권한 검증
+    await requireOrgMembership(organizationId);
 
     // URL 형식 검증 (명확한 에러 메시지 VAL_INVALID_URL)
     try {
@@ -74,6 +79,13 @@ export const updateWebhook = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { id, name, url, enabled } = data;
 
+    // 권한 검증: webhook의 조직 멤버인지 확인
+    const webhook = await getWebhookWithOrganization(id);
+    if (!webhook) {
+      throw new AppError("RES_WEBHOOK_NOT_FOUND");
+    }
+    await requireOrgMembership(webhook.organization.id);
+
     // Validate URL if provided
     if (url) {
       try {
@@ -90,6 +102,13 @@ export const updateWebhook = createServerFn({ method: "POST" })
 export const deleteWebhook = createServerFn({ method: "POST" })
   .inputValidator(zodValidator(DeleteWebhookInputSchema))
   .handler(async ({ data }) => {
+    // 권한 검증: webhook의 조직 멤버인지 확인
+    const webhook = await getWebhookWithOrganization(data.id);
+    if (!webhook) {
+      throw new AppError("RES_WEBHOOK_NOT_FOUND");
+    }
+    await requireOrgMembership(webhook.organization.id);
+
     await deleteWebhookQuery(data.id);
     return { success: true };
   });
@@ -102,6 +121,9 @@ export const testWebhookById = createServerFn({ method: "POST" })
     if (!webhook) {
       return { success: false, message: "웹훅을 찾을 수 없습니다" };
     }
+
+    // 권한 검증
+    await requireOrgMembership(webhook.organization.id);
 
     const testFeedback = {
       id: "test_" + Date.now(),
