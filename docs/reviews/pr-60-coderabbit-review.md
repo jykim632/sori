@@ -5,22 +5,23 @@
 
 ## 요약
 
-| 분류 | 개수 | 우선순위 |
-|------|------|----------|
-| 보안 (Security) | 5 | Critical |
-| 버그/오류 (Bug) | 4 | High |
-| 코드 품질 (Quality) | 10 | Medium |
-| 일관성 (Consistency) | 8 | Low |
-| 문서화 (Docs) | 6 | Low |
+| 분류 | 개수 | 우선순위 | 처리 |
+|------|------|----------|------|
+| 보안 (Security) | 5 | Critical | ✅ 완료 |
+| 버그/오류 (Bug) | 4 | High | 미처리 |
+| 코드 품질 (Quality) | 10 | Medium | 미처리 |
+| 일관성 (Consistency) | 8 | Low | 미처리 |
+| 문서화 (Docs) | 6 | Low | 미처리 |
 
 ---
 
-## 1. 보안 (Critical)
+## 1. 보안 (Critical) ✅ 완료
 
-### 1.1 SSRF 취약점 - Webhook URL 검증 우회
+### 1.1 ~~SSRF 취약점 - Webhook URL 검증 우회~~ ✅
 **파일**: `apps/web/src/routes/api/v1/feedback.ts:292-315`
+**커밋**: `3afa1d0`
 
-`isWebhookUrlAllowed` 함수가 allowlist를 무시하고 모든 HTTPS URL을 허용함.
+~~`isWebhookUrlAllowed` 함수가 allowlist를 무시하고 모든 HTTPS URL을 허용함.~~
 
 ```typescript
 // 문제: 모든 HTTPS URL 허용
@@ -37,30 +38,35 @@ return isAllowedHost;
 
 > **참고**: `app.sori.life` 도메인은 사용하지 않음. `web.sori.life`가 유일한 도메인.
 
-### 1.3 Widget XSS 취약점
+### 1.3 ~~Widget XSS 취약점~~ ✅
 **파일**: `packages/core/src/widget.ts:114-140`
+**커밋**: `3afa1d0`
 
-`config.greeting`이 `innerHTML`에 직접 삽입됨 → XSS 가능.
+~~`config.greeting`이 `innerHTML`에 직접 삽입됨 → XSS 가능.~~
 
 ```typescript
 // 수정: escapeHtml 적용
 ${escapeHtml(config.greeting)}
 ```
 
-### 1.4 Email Header Injection
+### 1.4 ~~Email Header Injection~~ ✅
 **파일**: `apps/web/src/lib/notification/email/customer.ts`
+**커밋**: `e5aaa58`
 
-From 헤더에 프로젝트 이름 삽입 시 CRLF 미검증 → Header Injection 가능.
+~~From 헤더에 프로젝트 이름 삽입 시 CRLF 미검증 → Header Injection 가능.~~
 
 ```typescript
 // 수정: CRLF 제거
 const sanitizedName = context.project.name.replace(/[\r\n]/g, '').trim();
 ```
 
-### 1.5 Webhook 권한 검증 누락
-**파일**: `apps/web/src/server/organization.ts:58-105`
+### 1.5 ~~Webhook 권한 검증 누락~~ ✅
+**파일**: `apps/web/src/server/webhook.ts`
+**커밋**: `87b7833`
 
-`getWebhooks`, `deleteWebhook`, `createWebhook`, `updateWebhook`, `testWebhookById`에 조직 권한 검증 없음.
+~~`getWebhooks`, `deleteWebhook`, `createWebhook`, `updateWebhook`, `testWebhookById`에 조직 권한 검증 없음.~~
+
+모든 webhook 함수에 `requireOrgMembership` 검증 추가 완료.
 
 ---
 
@@ -227,15 +233,15 @@ export * from "./token-validation";
 
 ## 조치 우선순위
 
-### P0 (즉시 수정)
-1. SSRF 취약점 수정
-2. Admin CORS 추가
-3. Widget XSS 수정
+### P0 (즉시 수정) ✅ 완료
+1. ~~SSRF 취약점 수정~~ ✅ `3afa1d0`
+2. ~~Admin CORS 추가~~ ⏭️ 해당없음
+3. ~~Widget XSS 수정~~ ✅ `3afa1d0`
 
-### P1 (릴리즈 전)
-4. Email Header Injection 방지
-5. Webhook 권한 검증 추가
-6. Widget Email 필수화
+### P1 (릴리즈 전) ✅ 완료
+4. ~~Email Header Injection 방지~~ ✅ `e5aaa58`
+5. ~~Webhook 권한 검증 추가~~ ✅ `87b7833`
+6. Widget Email 필수화 (이미 처리됨 - PR #59)
 7. Promise.all → 순차 실행
 
 ### P2 (다음 스프린트)
