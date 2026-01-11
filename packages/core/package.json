@@ -18,19 +18,29 @@
       "types": "./dist/cdn.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@sori/tsconfig": "workspace:*",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.5"
   },
-  "keywords": ["feedback", "widget", "lightweight", "vanilla-js"],
+  "keywords": [
+    "feedback",
+    "widget",
+    "lightweight",
+    "vanilla-js"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/your-org/sori"

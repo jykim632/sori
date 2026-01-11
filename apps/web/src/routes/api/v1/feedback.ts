@@ -303,12 +303,12 @@ function isWebhookUrlAllowed(url: string): boolean {
       return false;
     }
 
-    // 허용된 호스트 또는 CUSTOM 타입이면 통과
+    // 허용된 호스트만 통과
     const isAllowedHost = ALLOWED_WEBHOOK_HOSTS.some(
       (host) => parsed.hostname === host || parsed.hostname.endsWith("." + host)
     );
 
-    return isAllowedHost || parsed.protocol === "https:";
+    return isAllowedHost;
   } catch {
     return false;
   }

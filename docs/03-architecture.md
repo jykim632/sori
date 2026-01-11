@@ -16,7 +16,7 @@
         ┌────────────┴────────────┐
         ▼                         ▼
 ┌───────────────────┐    ┌───────────────────────────────┐
-│ cdn.sori.life     │    │ app.sori.life (TanStack Start) │
+│ cdn.sori.life     │    │ web.sori.life (TanStack Start) │
 │ (S3 + CloudFront) │    │ ├── POST /api/v1/feedback     │
 │ └── /widget.js    │    │ └── 어드민 대시보드             │
 └───────────────────┘    └───────────────────────────────┘
@@ -47,7 +47,7 @@ sori/
 │   │       ├── app.ts        # Hono 앱
 │   │       └── widget.ts     # GET /widget.js (정적 빌드용)
 │   │
-│   └── web/                  # 어드민 대시보드 + API (app.sori.life)
+│   └── web/                  # 어드민 대시보드 + API (web.sori.life)
 │       ├── package.json      # @sori/web
 │       ├── vite.config.ts
 │       └── src/

@@ -4,6 +4,13 @@ import { i18n, type Locale } from "./i18n";
 import { submitFeedback } from "./api";
 import { icons } from "./icons";
 import { resolveTheme, THEME_PRESETS } from "./themes";
+import { isValidEmail } from "./validation";
+
+function escapeHtml(text: string): string {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 const DEFAULT_CONFIG: Required<Omit<SoriConfig, "projectId">> = {
   apiUrl: "https://web.sori.life",
@@ -73,7 +80,7 @@ export function createWidget(userConfig: CreateWidgetOptions): SoriInstance {
   container.innerHTML = `
     <div class="sori-panel">
       <div class="sori-header">
-        <div class="sori-greeting">${config.greeting}</div>
+        <div class="sori-greeting">${escapeHtml(config.greeting)}</div>
       </div>
       <div class="sori-body">
         <div class="sori-form">
@@ -86,7 +93,8 @@ export function createWidget(userConfig: CreateWidgetOptions): SoriInstance {
               .join("")}
           </div>
           <textarea class="sori-textarea" placeholder="${t.placeholder}"></textarea>
-          <input type="email" class="sori-input" placeholder="${t.emailPlaceholder}" />
+          <input type="email" class="sori-input" placeholder="${t.emailPlaceholder}" required />
+          <div class="sori-error" style="display: none;"></div>
           <button class="sori-submit">${t.submit}</button>
         </div>
         <div class="sori-success" style="display: none;">
@@ -108,6 +116,18 @@ export function createWidget(userConfig: CreateWidgetOptions): SoriInstance {
   const typeButtons = container.querySelectorAll(".sori-type-btn");
   const form = container.querySelector(".sori-form") as HTMLElement;
   const successEl = container.querySelector(".sori-success") as HTMLElement;
+  const errorEl = container.querySelector(".sori-error") as HTMLElement;
+
+  function showError(message: string) {
+    errorEl.textContent = message;
+    errorEl.style.display = "block";
+    emailInput.style.borderColor = "#dc2626";
+  }
+
+  function hideError() {
+    errorEl.style.display = "none";
+    emailInput.style.borderColor = "";
+  }
 
   // Event handlers
   function open() {
@@ -132,18 +152,38 @@ export function createWidget(userConfig: CreateWidgetOptions): SoriInstance {
     showSuccess = false;
     form.style.display = "block";
     successEl.style.display = "none";
+    hideError();
   }
 
   async function handleSubmit() {
-    if (isSubmitting || !textarea.value.trim()) return;
+    const email = emailInput.value.trim();
 
+    // Email validation
+    if (!email) {
+      showError(t.emailRequired);
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      showError(t.emailInvalid);
+      return;
+    }
+
+    // Message validation
+    if (!textarea.value.trim()) {
+      return;
+    }
+
+    if (isSubmitting) return;
+
+    hideError();
     isSubmitting = true;
     submitBtn.disabled = true;
 
     const result = await submitFeedback(config.projectId, {
       type: selectedType,
       message: textarea.value.trim(),
-      email: emailInput.value.trim() || undefined,
+      email,
     }, config.apiUrl);
 
     isSubmitting = false;

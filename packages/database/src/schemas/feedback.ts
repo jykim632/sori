@@ -16,6 +16,8 @@ export const FeedbackSchema = z.object({
   priority: PrioritySchema.nullable(),
   metadata: z.record(z.string(), JsonValueSchema).nullable(),
   projectId: z.string(),
+  token: z.string().uuid(), // 고객 접근용 토큰
+  tokenAccessedAt: z.coerce.date().nullable(), // 마지막 토큰 접근 시간
   privacyAgreedAt: z.coerce.date(),
   createdAt: z.coerce.date(),
   resolvedAt: z.coerce.date().nullable(),

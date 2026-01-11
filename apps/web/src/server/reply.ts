@@ -7,6 +7,7 @@ import {
   updateReply as updateReplyQuery,
   deleteReply as deleteReplyQuery,
   getRepliesByFeedbackId,
+  getFeedbackWithProjectById,
 } from "@sori/database";
 import { zodValidator } from "@/lib/zod-validator";
 import {
@@ -15,6 +16,7 @@ import {
   UpdateReplyInputSchema,
   DeleteReplyInputSchema,
 } from "@/lib/schemas/server-input";
+import { sendCustomerReplyNotification } from "@/lib/notification/email/customer";
 
 // 인증 확인 헬퍼
 async function requireAuth() {
@@ -37,7 +39,7 @@ export const createReply = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const session = await requireAuth();
 
-    return await createReplyQuery({
+    const reply = await createReplyQuery({
       feedbackId: data.feedbackId,
       content: data.content,
       authorId: session.user.id,
@@ -45,6 +47,35 @@ export const createReply = createServerFn({ method: "POST" })
       authorType: "ADMIN",
       isInternal: data.isInternal || false,
     });
+
+    // Send email notification to customer if requested
+    if (data.sendEmail && !data.isInternal) {
+      const feedback = await getFeedbackWithProjectById(data.feedbackId);
+      if (feedback?.email && feedback.token) {
+        const appUrl = process.env.APP_URL || "https://web.sori.life";
+        const ticketUrl = `${appUrl}/f/${feedback.token}`;
+
+        // Fire and forget - don't block on email
+        sendCustomerReplyNotification(feedback.email, {
+          feedback: {
+            type: feedback.type,
+            message: feedback.message,
+          },
+          reply: {
+            content: data.content,
+            authorName: session.user.name || "담당자",
+          },
+          project: {
+            name: feedback.project.name,
+          },
+          ticketUrl,
+        }).catch((err) => {
+          console.error("Failed to send customer reply notification:", err);
+        });
+      }
+    }
+
+    return reply;
   });
 
 export const updateReply = createServerFn({ method: "POST" })
