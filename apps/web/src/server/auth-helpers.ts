@@ -24,14 +24,15 @@ export async function getSessionUserId(): Promise<string> {
 /**
  * 조직 접근 권한 확인
  * 현재 세션 사용자가 해당 조직의 멤버인지 확인
+ * 같은 request 내에서는 캐싱된 role 사용
  */
 export async function requireOrgMembership(organizationId: string): Promise<{
   userId: string;
   role: string;
 }> {
   const userId = await getSessionUserId();
-  const { getUserRoleInOrganization } = await import("@sori/database");
-  const role = await getUserRoleInOrganization(userId, organizationId);
+  const { getCachedRole } = await import("@/lib/role-cache");
+  const role = await getCachedRole(userId, organizationId);
 
   if (!role) {
     throw new AppError("AUTH_NOT_MEMBER");

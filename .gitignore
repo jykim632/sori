@@ -30,6 +30,9 @@ prisma/dev.db-journal
 # Testing
 coverage/
 
+# Beads (local issue tracker)
+.beads/
+
 # Logs
 *.log
 npm-debug.log*

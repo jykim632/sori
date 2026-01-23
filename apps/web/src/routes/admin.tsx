@@ -130,7 +130,6 @@ function AdminLayout() {
             <Link
               to="/admin/feedbacks"
               search={{ org: org || currentOrg.id }}
-              preload="viewport"
               className={`flex items-center gap-2 py-3 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === "feedbacks"
                   ? "border-indigo-600 text-indigo-600"
@@ -143,7 +142,6 @@ function AdminLayout() {
             <Link
               to="/admin/projects"
               search={{ org: org || currentOrg.id }}
-              preload="viewport"
               className={`flex items-center gap-2 py-3 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === "projects"
                   ? "border-indigo-600 text-indigo-600"
@@ -156,7 +154,6 @@ function AdminLayout() {
             <Link
               to="/admin/settings"
               search={{ org: org || currentOrg.id }}
-              preload="viewport"
               className={`flex items-center gap-2 py-3 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === "settings"
                   ? "border-indigo-600 text-indigo-600"
