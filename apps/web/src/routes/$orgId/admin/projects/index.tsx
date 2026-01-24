@@ -4,11 +4,8 @@ import { getProjects, createProject, deleteProject, updateProject } from "@/serv
 import { Plus, X, FolderOpen, Copy, Check, Trash2, Palette, Pencil } from "lucide-react";
 import { DeleteProjectModal, EditProjectModal, type Project } from "@/components/admin";
 
-export const Route = createFileRoute("/admin/projects/")({
+export const Route = createFileRoute("/$orgId/admin/projects/")({
   component: ProjectsPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    org: typeof search.org === "string" ? search.org : undefined,
-  }),
   loader: async ({ context }): Promise<{ projects: Project[] }> => {
     const ctx = context as { currentOrg: { id: string } };
     const projects = await getProjects({ data: { organizationId: ctx.currentOrg.id } }) as unknown as Project[];
@@ -18,7 +15,8 @@ export const Route = createFileRoute("/admin/projects/")({
 
 function ProjectsPage() {
   const { projects } = Route.useLoaderData() as { projects: Project[] };
-  const { org } = Route.useSearch();
+  const { orgId } = Route.useParams();
+  const { currentOrg } = Route.useRouteContext() as { currentOrg: { id: string } };
   const router = useRouter();
 
   const [showNewProject, setShowNewProject] = useState(false);
@@ -51,7 +49,7 @@ function ProjectsPage() {
       await createProject({
         data: {
           name: newProjectName.trim(),
-          organizationId: org!,
+          organizationId: currentOrg.id,
           allowedOrigins: newProjectOrigins
             .split("\n")
             .map((o) => o.trim())
@@ -186,9 +184,8 @@ function ProjectsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Link
-                  to="/admin/projects/$projectId"
-                  params={{ projectId: project.id }}
-                  search={{ org }}
+                  to="/$orgId/admin/projects/$projectId"
+                  params={{ orgId, projectId: project.id }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                 >
                   <Palette className="w-4 h-4" />

@@ -1,43 +1,16 @@
-import { createFileRoute, redirect, useRouter, Link, Outlet, useMatches } from "@tanstack/react-router";
+import { createFileRoute, useRouter, Link, Outlet, useMatches } from "@tanstack/react-router";
 import { useState } from "react";
-import { getSession } from "@/server/auth";
-import { getUserOrganizations } from "@/server/organization";
 import { signOut } from "@/lib/auth-client";
 import { ChevronDown, Plus, MessageSquare, FolderOpen, Building2, Settings } from "lucide-react";
 import type { Organization } from "@/components/admin";
 
-type SearchParams = {
-  org?: string;
-};
-
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/$orgId/admin")({
   component: AdminLayout,
-  validateSearch: (search: Record<string, unknown>): SearchParams => ({
-    org: typeof search.org === "string" ? search.org : undefined,
-  }),
-  beforeLoad: async ({ search }) => {
-    const [session, organizations] = await Promise.all([
-      getSession(),
-      getUserOrganizations(),
-    ]);
-
-    if (!session) {
-      throw redirect({ to: "/login" });
-    }
-    if (organizations.length === 0) {
-      throw redirect({ to: "/onboarding" });
-    }
-
-    const selectedOrgId = search.org || organizations[0].id;
-    const currentOrg = organizations.find((o) => o.id === selectedOrgId) || organizations[0];
-
-    return { session, organizations, currentOrg };
-  },
 });
 
 function AdminLayout() {
   const { session, organizations, currentOrg } = Route.useRouteContext();
-  const { org } = Route.useSearch();
+  const { orgId } = Route.useParams();
   const router = useRouter();
   const matches = useMatches();
 
@@ -56,11 +29,11 @@ function AdminLayout() {
     router.navigate({ to: "/login" });
   };
 
-  const handleOrgChange = (orgId: string) => {
+  const handleOrgChange = (newOrgId: string) => {
     setIsOrgDropdownOpen(false);
     router.navigate({
-      to: `/admin/${activeTab}`,
-      search: { org: orgId },
+      to: `/$orgId/admin/${activeTab}`,
+      params: { orgId: newOrgId },
     });
   };
 
@@ -128,8 +101,8 @@ function AdminLayout() {
           {/* Tabs */}
           <div className="flex gap-6 -mb-px">
             <Link
-              to="/admin/feedbacks"
-              search={{ org: org || currentOrg.id }}
+              to="/$orgId/admin/feedbacks"
+              params={{ orgId }}
               className={`flex items-center gap-2 py-3 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === "feedbacks"
                   ? "border-indigo-600 text-indigo-600"
@@ -140,8 +113,8 @@ function AdminLayout() {
               피드백
             </Link>
             <Link
-              to="/admin/projects"
-              search={{ org: org || currentOrg.id }}
+              to="/$orgId/admin/projects"
+              params={{ orgId }}
               className={`flex items-center gap-2 py-3 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === "projects"
                   ? "border-indigo-600 text-indigo-600"
@@ -152,8 +125,8 @@ function AdminLayout() {
               프로젝트
             </Link>
             <Link
-              to="/admin/settings"
-              search={{ org: org || currentOrg.id }}
+              to="/$orgId/admin/settings"
+              params={{ orgId }}
               className={`flex items-center gap-2 py-3 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === "settings"
                   ? "border-indigo-600 text-indigo-600"

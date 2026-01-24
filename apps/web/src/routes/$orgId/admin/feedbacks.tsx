@@ -37,10 +37,9 @@ import {
   FeedbackDetailModal,
 } from "@/components/admin/index";
 
-export const Route = createFileRoute("/admin/feedbacks")({
+export const Route = createFileRoute("/$orgId/admin/feedbacks")({
   component: FeedbacksPage,
-  validateSearch: (search: Record<string, unknown>): FeedbackSearchParams & { org?: string } => ({
-    org: typeof search.org === "string" ? search.org : undefined,
+  validateSearch: (search: Record<string, unknown>): FeedbackSearchParams => ({
     status: validStatuses.includes(search.status as FeedbackStatus)
       ? (search.status as FeedbackStatus)
       : undefined,
@@ -194,12 +193,12 @@ function FeedbacksPage() {
   const projects = loaderData?.projects ?? [];
   const defaultProjectId = loaderData?.defaultProjectId;
   const search = Route.useSearch();
+  const { orgId } = Route.useParams();
   const router = useRouter();
   const routerState = useRouterState({ select: (s) => s.isLoading });
   const isRouterLoading = routerState;
 
   const {
-    org,
     status: filterStatus,
     type: filterType,
     project: filterProject,
@@ -259,9 +258,9 @@ function FeedbacksPage() {
     }
 
     router.navigate({
-      to: "/admin/feedbacks",
+      to: "/$orgId/admin/feedbacks",
+      params: { orgId },
       search: {
-        org,
         status: hasStatusChange ? updates.status : filterStatus,
         type: hasTypeChange ? updates.type : filterType,
         project: hasProjectChange ? updates.project : filterProject,
@@ -290,8 +289,9 @@ function FeedbacksPage() {
   const handleClearFilters = () => {
     setSearchInput("");
     router.navigate({
-      to: "/admin/feedbacks",
-      search: { org },
+      to: "/$orgId/admin/feedbacks",
+      params: { orgId },
+      search: {},
     });
   };
 

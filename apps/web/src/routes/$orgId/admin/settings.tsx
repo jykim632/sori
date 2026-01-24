@@ -10,11 +10,8 @@ import {
 import { Plus, X, Send, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { getWebhookTypeLabel, getWebhookTypeColor, type Webhook, type Organization } from "@/components/admin";
 
-export const Route = createFileRoute("/admin/settings")({
+export const Route = createFileRoute("/$orgId/admin/settings")({
   component: SettingsPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    org: typeof search.org === "string" ? search.org : undefined,
-  }),
   loader: async ({ context }) => {
     const ctx = context as { currentOrg: Organization };
     const webhooks = await getWebhooks({ data: { organizationId: ctx.currentOrg.id } }) as Webhook[];
