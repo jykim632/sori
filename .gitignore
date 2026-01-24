@@ -31,7 +31,7 @@ prisma/dev.db-journal
 coverage/
 
 # Beads (local issue tracker)
-.beads/
+# .beads/
 
 # Logs
 *.log
