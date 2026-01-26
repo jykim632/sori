@@ -1,7 +1,6 @@
 import { createFileRoute, redirect, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { getProjectById, updateProject, generateApiKey, revokeApiKey, deleteProject } from "@/server/projects";
-import { getSession } from "@/server/auth";
 import { ArrowLeft, Check, Palette, Save, RotateCcw, Eye, Key, Copy, RefreshCw, Trash2, EyeOff, AlertTriangle, Settings, Globe } from "lucide-react";
 import { NotificationSettings } from "@/components/projects/notification-settings";
 
@@ -85,25 +84,15 @@ type ProjectType = {
   updatedAt: Date;
 };
 
-export const Route = createFileRoute("/admin/projects/$projectId")({
+export const Route = createFileRoute("/$orgId/admin/projects/$projectId")({
   component: ProjectSettingsPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    org: typeof search.org === "string" ? search.org : undefined,
-  }),
-  beforeLoad: async () => {
-    const session = await getSession();
-    if (!session) {
-      throw redirect({ to: "/login" });
-    }
-    return { session };
-  },
-  loaderDeps: ({ search }) => ({
-    org: search.org,
-  }),
-  loader: async ({ params, deps }) => {
+  loader: async ({ params }) => {
     const project = await getProjectById({ data: { id: params.projectId } }) as ProjectType | null;
     if (!project) {
-      throw redirect({ to: "/admin/projects", search: { org: deps.org } });
+      throw redirect({
+        to: "/$orgId/admin/projects",
+        params: { orgId: params.orgId },
+      });
     }
     return { project };
   },
@@ -111,7 +100,7 @@ export const Route = createFileRoute("/admin/projects/$projectId")({
 
 function ProjectSettingsPage() {
   const { project } = Route.useLoaderData();
-  const { org } = Route.useSearch();
+  const { orgId } = Route.useParams();
   const router = useRouter();
 
   // Initialize config from project or default
@@ -216,7 +205,10 @@ function ProjectSettingsPage() {
     setDeleting(true);
     try {
       await deleteProject({ data: { id: project.id } });
-      router.navigate({ to: "/admin/projects", search: { org } });
+      router.navigate({
+        to: "/$orgId/admin/projects",
+        params: { orgId },
+      });
     } catch (error) {
       alert(error instanceof Error ? error.message : "프로젝트 삭제에 실패했습니다.");
       setDeleting(false);
@@ -281,8 +273,8 @@ function ProjectSettingsPage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <Link
-                to="/admin/projects"
-                search={{ org }}
+                to="/$orgId/admin/projects"
+                params={{ orgId }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600" />

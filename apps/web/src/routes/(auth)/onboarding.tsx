@@ -66,7 +66,7 @@ function OnboardingPage() {
         },
       });
       // Navigate to admin with the new org selected
-      navigate({ to: "/admin", search: { org: org.id } });
+      navigate({ to: "/$orgId/admin", params: { orgId: org.id } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "조직 생성에 실패했습니다");
     } finally {
