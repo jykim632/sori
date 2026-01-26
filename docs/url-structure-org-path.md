@@ -142,6 +142,73 @@ const { orgId } = Route.useParams();
 
 - 첫 번째 조직으로 redirect (사용자가 빠르게 유효한 화면으로 복귀)
 
+---
+
+## Phase 2: Organization Short ID
+
+### 배경
+
+현재 Organization ID는 CUID 유사 형식으로 20-25자 길이다.
+
+```
+현재: /c1wr7x7dD9k_vB2cXfGhJ/admin/feedbacks
+```
+
+URL이 너무 길어 가독성이 떨어진다. 10자로 줄인다.
+
+```
+변경: /V1StGXR8_Z/admin/feedbacks
+```
+
+### 변경 범위
+
+- Organization ID만 Short ID 적용
+- Project, Feedback 등 다른 엔티티는 현재 형식 유지
+- 기존 Organization ID는 유지 (새로 생성되는 것만 Short ID)
+
+### 구현 방식
+
+**nanoid** 라이브러리 사용 (10자, URL-safe)
+
+```typescript
+import { nanoid } from "nanoid";
+
+export function generateShortId(): string {
+  return nanoid(10);
+}
+```
+
+### 충돌 안전성
+
+| 항목 | 값 |
+|------|-----|
+| 문자셋 | A-Za-z0-9_- (64자) |
+| 길이 | 10자 |
+| 가능한 조합 | 64^10 ≈ 1.15 × 10^18 |
+| 1% 충돌까지 | 초당 1000개 생성 시 약 17년 |
+
+PostgreSQL PRIMARY KEY 제약조건이 중복 삽입 방지.
+
+### 변경 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `packages/database/package.json` | nanoid 의존성 추가 |
+| `packages/database/src/client.ts` | `generateShortId()` 함수 추가 |
+| `packages/database/src/index.ts` | `generateShortId` export 추가 |
+| `packages/database/src/queries/organization.ts` | `createOrganization()`에서 Short ID 사용 |
+
+### 기존 ID와 호환성
+
+| 구분 | 형식 | 길이 | 예시 |
+|------|------|------|------|
+| 기존 | `c` + timestamp + random | 20-25자 | `c1wr7x7dD9k_vB2cXfGhJ` |
+| 신규 | nanoid | 10자 | `V1StGXR8_Z` |
+
+기존 Organization은 그대로 유지, 새로 생성되는 Organization만 Short ID 적용.
+
+---
+
 ## 관련 이슈
 
 - sori-pth: URL 구조 검토 (완료)
