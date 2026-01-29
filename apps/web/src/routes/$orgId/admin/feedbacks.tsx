@@ -37,10 +37,9 @@ import {
   FeedbackDetailModal,
 } from "@/components/admin/index";
 
-export const Route = createFileRoute("/admin/feedbacks")({
+export const Route = createFileRoute("/$orgId/admin/feedbacks")({
   component: FeedbacksPage,
-  validateSearch: (search: Record<string, unknown>): FeedbackSearchParams & { org?: string } => ({
-    org: typeof search.org === "string" ? search.org : undefined,
+  validateSearch: (search: Record<string, unknown>): FeedbackSearchParams => ({
     status: validStatuses.includes(search.status as FeedbackStatus)
       ? (search.status as FeedbackStatus)
       : undefined,
@@ -79,33 +78,103 @@ export const Route = createFileRoute("/admin/feedbacks")({
     feedbacks: FeedbackWithProject[];
     pagination: Pagination;
     projects: Project[];
+    defaultProjectId?: string;
   }> => {
     const ctx = context as { currentOrg: { id: string } };
     const orgId = ctx.currentOrg.id;
 
-    const [feedbacksResult, projects] = await Promise.all([
-      getFeedbacksFiltered({
-        data: {
-          organizationId: orgId,
-          status: deps.status,
-          type: deps.type,
-          projectId: deps.projectId,
-          search: deps.search,
-          dateFrom: deps.dateFrom,
-          dateTo: deps.dateTo,
-          orderBy: deps.orderBy,
-          order: deps.order,
-          page: deps.page || 1,
-          limit: 20,
-        },
-      }) as unknown as { data: FeedbackWithProject[]; pagination: Pagination },
-      getProjects({ data: { organizationId: orgId } }) as unknown as Project[],
-    ]);
+    // "all" = 전체 프로젝트 조회 (병렬 로드)
+    if (deps.projectId === "all") {
+      const [feedbacksResult, projects] = await Promise.all([
+        getFeedbacksFiltered({
+          data: {
+            organizationId: orgId,
+            status: deps.status,
+            type: deps.type,
+            projectId: undefined, // 전체
+            search: deps.search,
+            dateFrom: deps.dateFrom,
+            dateTo: deps.dateTo,
+            orderBy: deps.orderBy,
+            order: deps.order,
+            page: deps.page || 1,
+            limit: 20,
+          },
+        }) as unknown as { data: FeedbackWithProject[]; pagination: Pagination },
+        getProjects({ data: { organizationId: orgId } }) as unknown as Project[],
+      ]);
+
+      return {
+        feedbacks: feedbacksResult.data,
+        pagination: feedbacksResult.pagination,
+        projects,
+      };
+    }
+
+    // 특정 projectId가 URL에 있으면 병렬 로드
+    if (deps.projectId) {
+      const [feedbacksResult, projects] = await Promise.all([
+        getFeedbacksFiltered({
+          data: {
+            organizationId: orgId,
+            status: deps.status,
+            type: deps.type,
+            projectId: deps.projectId,
+            search: deps.search,
+            dateFrom: deps.dateFrom,
+            dateTo: deps.dateTo,
+            orderBy: deps.orderBy,
+            order: deps.order,
+            page: deps.page || 1,
+            limit: 20,
+          },
+        }) as unknown as { data: FeedbackWithProject[]; pagination: Pagination },
+        getProjects({ data: { organizationId: orgId } }) as unknown as Project[],
+      ]);
+
+      return {
+        feedbacks: feedbacksResult.data,
+        pagination: feedbacksResult.pagination,
+        projects,
+      };
+    }
+
+    // projectId가 없으면 projects 먼저 로드 → 첫 번째 프로젝트로 feedbacks 조회
+    const projects = await getProjects({ data: { organizationId: orgId } }) as unknown as Project[];
+
+    // 프로젝트가 없으면 빈 결과 반환
+    if (projects.length === 0) {
+      return {
+        feedbacks: [],
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+        projects: [],
+      };
+    }
+
+    // 첫 번째 프로젝트를 기본값으로 사용
+    const defaultProjectId = projects[0].id;
+
+    const feedbacksResult = await getFeedbacksFiltered({
+      data: {
+        organizationId: orgId,
+        status: deps.status,
+        type: deps.type,
+        projectId: defaultProjectId,
+        search: deps.search,
+        dateFrom: deps.dateFrom,
+        dateTo: deps.dateTo,
+        orderBy: deps.orderBy,
+        order: deps.order,
+        page: deps.page || 1,
+        limit: 20,
+      },
+    }) as unknown as { data: FeedbackWithProject[]; pagination: Pagination };
 
     return {
       feedbacks: feedbacksResult.data,
       pagination: feedbacksResult.pagination,
       projects,
+      defaultProjectId,
     };
   },
 });
@@ -114,6 +183,7 @@ type LoaderData = {
   feedbacks: FeedbackWithProject[];
   pagination: Pagination;
   projects: Project[];
+  defaultProjectId?: string;
 };
 
 function FeedbacksPage() {
@@ -121,13 +191,14 @@ function FeedbacksPage() {
   const feedbacks = loaderData?.feedbacks ?? [];
   const pagination = loaderData?.pagination ?? { page: 1, limit: 20, total: 0, totalPages: 0 };
   const projects = loaderData?.projects ?? [];
+  const defaultProjectId = loaderData?.defaultProjectId;
   const search = Route.useSearch();
+  const { orgId } = Route.useParams();
   const router = useRouter();
   const routerState = useRouterState({ select: (s) => s.isLoading });
   const isRouterLoading = routerState;
 
   const {
-    org,
     status: filterStatus,
     type: filterType,
     project: filterProject,
@@ -138,6 +209,9 @@ function FeedbacksPage() {
     order: filterOrder,
     page: currentPage,
   } = search;
+
+  // URL에 project가 없으면 defaultProjectId 사용 (UI 표시용)
+  const activeProjectFilter = filterProject ?? defaultProjectId;
 
   const [searchInput, setSearchInput] = useState(filterSearch || "");
   const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -184,9 +258,9 @@ function FeedbacksPage() {
     }
 
     router.navigate({
-      to: "/admin/feedbacks",
+      to: "/$orgId/admin/feedbacks",
+      params: { orgId },
       search: {
-        org,
         status: hasStatusChange ? updates.status : filterStatus,
         type: hasTypeChange ? updates.type : filterType,
         project: hasProjectChange ? updates.project : filterProject,
@@ -215,8 +289,9 @@ function FeedbacksPage() {
   const handleClearFilters = () => {
     setSearchInput("");
     router.navigate({
-      to: "/admin/feedbacks",
-      search: { org },
+      to: "/$orgId/admin/feedbacks",
+      params: { orgId },
+      search: {},
     });
   };
 
@@ -388,10 +463,10 @@ function FeedbacksPage() {
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 uppercase tracking-wide">프로젝트</span>
             <select
-              value={filterProject || ""}
-              onChange={(e) => handleFilterChange({ project: e.target.value || undefined })}
+              value={activeProjectFilter || ""}
+              onChange={(e) => handleFilterChange({ project: e.target.value })}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors appearance-none pr-8 bg-no-repeat bg-[length:16px] bg-[center_right_8px] ${
-                filterProject
+                activeProjectFilter && activeProjectFilter !== "all"
                   ? "border-indigo-200 bg-indigo-50 text-indigo-600"
                   : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
               }`}
@@ -399,7 +474,7 @@ function FeedbacksPage() {
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
               }}
             >
-              <option value="">전체</option>
+              <option value="all">전체</option>
               {(projects as Project[]).map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
