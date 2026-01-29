@@ -223,7 +223,7 @@ function ProjectsPage() {
                 <button
                   onClick={() =>
                     copyToClipboard(
-                      `<script src="${origin}/api/v1/widget" data-project-id="${project.id}"></script>`,
+                      `<script src="https://cdn.sori.life/widget.js" data-project-id="${project.id}"></script>`,
                       `embed-${project.id}`
                     )
                   }
@@ -237,7 +237,7 @@ function ProjectsPage() {
                   {copiedId === `embed-${project.id}` ? "복사됨" : "복사"}
                 </button>
               </div>
-              <code className="text-xs text-indigo-900 font-mono break-all">{`<script src="${origin}/api/v1/widget" data-project-id="${project.id}"></script>`}</code>
+              <code className="text-xs text-indigo-900 font-mono break-all">{`<script src="https://cdn.sori.life/widget.js" data-project-id="${project.id}"></script>`}</code>
             </div>
           </div>
         ))}

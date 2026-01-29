@@ -15,10 +15,10 @@ function GuidePage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const basicCode = `<script src="https://sori.io/api/v1/widget" data-project-id="YOUR_PROJECT_ID"></script>`;
+  const basicCode = `<script src="https://cdn.sori.life/widget.js" data-project-id="YOUR_PROJECT_ID"></script>`;
 
   const fullCode = `<script
-  src="https://sori.io/api/v1/widget"
+  src="https://cdn.sori.life/widget.js"
   data-project-id="YOUR_PROJECT_ID"
   data-position="bottom-right"
   data-color="#4f46e5"
@@ -26,7 +26,7 @@ function GuidePage() {
 ></script>`;
 
   const apiCode = `// JavaScript
-fetch('https://sori.io/api/v1/feedback', {
+fetch('https://web.sori.life/api/v1/feedback', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({

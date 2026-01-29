@@ -3,7 +3,7 @@
  * Auto-initializes widget from script tag data attributes
  *
  * Usage:
- * <script src="https://cdn.sori.io/widget.js" data-project-id="your-project-id"></script>
+ * <script src="https://cdn.sori.life/widget.js" data-project-id="your-project-id"></script>
  */
 
 import { createWidget } from "./widget";
