@@ -38,3 +38,5 @@ coverage/
 npm-debug.log*
 pnpm-debug.log*
 packages/database/src/scripts/
+.vercel
+.env*.local
