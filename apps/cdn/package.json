@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "cp ../../packages/core/dist/cdn.js public/widget.js"
+    "build": "mkdir -p public && cp ../../packages/core/dist/cdn.js public/widget.js"
   },
   "dependencies": {
     "@sori/core": "workspace:*"
