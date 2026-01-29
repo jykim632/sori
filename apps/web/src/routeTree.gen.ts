@@ -33,6 +33,7 @@ import { Route as ApiV1TicketsTokenRouteImport } from './routes/api/v1/tickets.$
 import { Route as ApiV1FeedbacksFeedbackIdRouteImport } from './routes/api/v1/feedbacks.$feedbackId'
 import { Route as OrgIdAdminProjectsProjectIdRouteImport } from './routes/$orgId/admin/projects/$projectId'
 import { Route as ApiV1TicketsTokenRepliesRouteImport } from './routes/api/v1/tickets.$token.replies'
+import { Route as ApiV1ProjectsProjectIdWidgetConfigRouteImport } from './routes/api/v1/projects.$projectId.widget-config'
 import { Route as ApiV1FeedbacksFeedbackIdRepliesRouteImport } from './routes/api/v1/feedbacks.$feedbackId.replies'
 import { Route as ApiV1FeedbacksFeedbackIdRepliesReplyIdRouteImport } from './routes/api/v1/feedbacks.$feedbackId.replies.$replyId'
 
@@ -159,6 +160,12 @@ const ApiV1TicketsTokenRepliesRoute =
     path: '/replies',
     getParentRoute: () => ApiV1TicketsTokenRoute,
   } as any)
+const ApiV1ProjectsProjectIdWidgetConfigRoute =
+  ApiV1ProjectsProjectIdWidgetConfigRouteImport.update({
+    id: '/api/v1/projects/$projectId/widget-config',
+    path: '/api/v1/projects/$projectId/widget-config',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1FeedbacksFeedbackIdRepliesRoute =
   ApiV1FeedbacksFeedbackIdRepliesRouteImport.update({
     id: '/replies',
@@ -197,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/tickets/$token': typeof ApiV1TicketsTokenRouteWithChildren
   '/$orgId/admin/projects': typeof OrgIdAdminProjectsIndexRoute
   '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
+  '/api/v1/projects/$projectId/widget-config': typeof ApiV1ProjectsProjectIdWidgetConfigRoute
   '/api/v1/tickets/$token/replies': typeof ApiV1TicketsTokenRepliesRoute
   '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
 }
@@ -224,6 +232,7 @@ export interface FileRoutesByTo {
   '/api/v1/tickets/$token': typeof ApiV1TicketsTokenRouteWithChildren
   '/$orgId/admin/projects': typeof OrgIdAdminProjectsIndexRoute
   '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
+  '/api/v1/projects/$projectId/widget-config': typeof ApiV1ProjectsProjectIdWidgetConfigRoute
   '/api/v1/tickets/$token/replies': typeof ApiV1TicketsTokenRepliesRoute
   '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
 }
@@ -253,6 +262,7 @@ export interface FileRoutesById {
   '/api/v1/tickets/$token': typeof ApiV1TicketsTokenRouteWithChildren
   '/$orgId/admin/projects/': typeof OrgIdAdminProjectsIndexRoute
   '/api/v1/feedbacks/$feedbackId/replies': typeof ApiV1FeedbacksFeedbackIdRepliesRouteWithChildren
+  '/api/v1/projects/$projectId/widget-config': typeof ApiV1ProjectsProjectIdWidgetConfigRoute
   '/api/v1/tickets/$token/replies': typeof ApiV1TicketsTokenRepliesRoute
   '/api/v1/feedbacks/$feedbackId/replies/$replyId': typeof ApiV1FeedbacksFeedbackIdRepliesReplyIdRoute
 }
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
     | '/api/v1/tickets/$token'
     | '/$orgId/admin/projects'
     | '/api/v1/feedbacks/$feedbackId/replies'
+    | '/api/v1/projects/$projectId/widget-config'
     | '/api/v1/tickets/$token/replies'
     | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
   fileRoutesByTo: FileRoutesByTo
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/api/v1/tickets/$token'
     | '/$orgId/admin/projects'
     | '/api/v1/feedbacks/$feedbackId/replies'
+    | '/api/v1/projects/$projectId/widget-config'
     | '/api/v1/tickets/$token/replies'
     | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
   id:
@@ -338,6 +350,7 @@ export interface FileRouteTypes {
     | '/api/v1/tickets/$token'
     | '/$orgId/admin/projects/'
     | '/api/v1/feedbacks/$feedbackId/replies'
+    | '/api/v1/projects/$projectId/widget-config'
     | '/api/v1/tickets/$token/replies'
     | '/api/v1/feedbacks/$feedbackId/replies/$replyId'
   fileRoutesById: FileRoutesById
@@ -359,6 +372,7 @@ export interface RootRouteChildren {
   ApiV1FeedbacksRoute: typeof ApiV1FeedbacksRouteWithChildren
   ApiV1WidgetRoute: typeof ApiV1WidgetRoute
   ApiV1TicketsTokenRoute: typeof ApiV1TicketsTokenRouteWithChildren
+  ApiV1ProjectsProjectIdWidgetConfigRoute: typeof ApiV1ProjectsProjectIdWidgetConfigRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -531,6 +545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1TicketsTokenRepliesRouteImport
       parentRoute: typeof ApiV1TicketsTokenRoute
     }
+    '/api/v1/projects/$projectId/widget-config': {
+      id: '/api/v1/projects/$projectId/widget-config'
+      path: '/api/v1/projects/$projectId/widget-config'
+      fullPath: '/api/v1/projects/$projectId/widget-config'
+      preLoaderRoute: typeof ApiV1ProjectsProjectIdWidgetConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/feedbacks/$feedbackId/replies': {
       id: '/api/v1/feedbacks/$feedbackId/replies'
       path: '/replies'
@@ -650,6 +671,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1FeedbacksRoute: ApiV1FeedbacksRouteWithChildren,
   ApiV1WidgetRoute: ApiV1WidgetRoute,
   ApiV1TicketsTokenRoute: ApiV1TicketsTokenRouteWithChildren,
+  ApiV1ProjectsProjectIdWidgetConfigRoute:
+    ApiV1ProjectsProjectIdWidgetConfigRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

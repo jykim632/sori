@@ -86,7 +86,7 @@ packages/
 └── database/   # PostgreSQL client (pg + raw SQL, Zod schemas)
 
 apps/
-├── cdn/        # Widget CDN - cdn.sori.life (S3 + CloudFront, static only)
+├── cdn/        # Widget CDN - cdn.sori.life (Cloudflare Pages, static only)
 └── web/        # Admin + API - web.sori.life (TanStack Start + React 19)
 ```
 
