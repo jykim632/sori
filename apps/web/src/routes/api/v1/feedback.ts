@@ -208,7 +208,7 @@ export const Route = createFileRoute("/api/v1/feedback")({
             slackWebhookUrl: notificationSetting.slackWebhookUrl ? "[SET]" : null,
           } : null);
           if (notificationSetting) {
-            const appUrl = process.env.APP_URL || "https://web.sori.life";
+            const appUrl = process.env.APP_URL || "https://app.sori.life";
             sendProjectNotifications(notificationSetting, {
               feedback: {
                 id: feedback.id,
