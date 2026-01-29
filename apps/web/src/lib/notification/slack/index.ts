@@ -24,7 +24,7 @@ export function createSlackSender(webhookUrl: string): NotificationSender {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: message }),
         redirect: "error",
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(10000),
       });
 
       if (!response.ok) {
