@@ -5,39 +5,10 @@ import {
   updateTokenAccessedAt,
   isTokenExpired,
 } from "@sori/database";
+import { createRateLimiter, RATE_LIMIT_CONFIGS } from "@/lib/api-utils";
 
-// Rate limiting (in-memory, per IP)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 60; // 60 requests per minute
-const CLEANUP_INTERVAL_MS = 60000; // 1 minute
-
-// Periodic cleanup of expired entries
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, limit] of rateLimitMap) {
-    if (now > limit.resetTime) {
-      rateLimitMap.delete(key);
-    }
-  }
-}, CLEANUP_INTERVAL_MS);
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const limit = rateLimitMap.get(ip);
-
-  if (!limit || now > limit.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-
-  if (limit.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return false;
-  }
-
-  limit.count++;
-  return true;
-}
+const ticketViewLimiter = createRateLimiter(RATE_LIMIT_CONFIGS.ticketView);
+setInterval(() => ticketViewLimiter.cleanup(), 60000);
 
 // CORS headers for public API
 const CORS_HEADERS = {
@@ -73,7 +44,7 @@ export const Route = createFileRoute("/api/v1/tickets/$token")({
             request.headers.get("x-real-ip") ||
             "unknown";
 
-          if (!checkRateLimit(ip)) {
+          if (!ticketViewLimiter.check(ip).allowed) {
             return new Response(
               JSON.stringify({ error: "Too many requests. Please try again later." }),
               {

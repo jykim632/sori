@@ -7,6 +7,7 @@ import {
   getProjectWithWebhooks,
 } from "@sori/database";
 import { z } from "zod";
+import { createRateLimiter, RATE_LIMIT_CONFIGS } from "@/lib/api-utils";
 
 // Zod schema for customer reply request body
 const CustomerReplySchema = z.object({
@@ -17,38 +18,8 @@ const CustomerReplySchema = z.object({
     .max(5000, "Content too long (max 5000 characters)"),
 });
 
-// Rate limiting (in-memory, per IP + token)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10; // 10 replies per minute
-const CLEANUP_INTERVAL_MS = 60000; // 1 minute
-
-// Periodic cleanup of expired entries
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, limit] of rateLimitMap) {
-    if (now > limit.resetTime) {
-      rateLimitMap.delete(key);
-    }
-  }
-}, CLEANUP_INTERVAL_MS);
-
-function checkRateLimit(key: string): boolean {
-  const now = Date.now();
-  const limit = rateLimitMap.get(key);
-
-  if (!limit || now > limit.resetTime) {
-    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-
-  if (limit.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return false;
-  }
-
-  limit.count++;
-  return true;
-}
+const ticketReplyLimiter = createRateLimiter(RATE_LIMIT_CONFIGS.ticketReply);
+setInterval(() => ticketReplyLimiter.cleanup(), 60000);
 
 // CORS headers for public API
 const CORS_HEADERS = {
@@ -97,7 +68,7 @@ export const Route = createFileRoute("/api/v1/tickets/$token/replies")({
             "unknown";
           const rateLimitKey = `${ip}:${token}`;
 
-          if (!checkRateLimit(rateLimitKey)) {
+          if (!ticketReplyLimiter.check(rateLimitKey).allowed) {
             return new Response(
               JSON.stringify({ error: "Too many requests. Please try again later." }),
               {
