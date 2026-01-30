@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { auth } from "@/lib/auth";
+import { getCachedSession } from "@/lib/session-cache";
+import { getSessionUserId } from "./auth-helpers";
 import { AppError } from "@/lib/errors";
 import {
   createReply as createReplyQuery,
@@ -18,16 +18,6 @@ import {
 } from "@/lib/schemas/server-input";
 import { sendCustomerReplyNotification } from "@/lib/notification/email/customer";
 
-// 인증 확인 헬퍼
-async function requireAuth() {
-  const request = getRequest();
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session) {
-    throw new AppError("AUTH_UNAUTHORIZED");
-  }
-  return session;
-}
-
 export const getReplies = createServerFn({ method: "GET" })
   .inputValidator(zodValidator(GetRepliesInputSchema))
   .handler(async ({ data }) => {
@@ -37,7 +27,10 @@ export const getReplies = createServerFn({ method: "GET" })
 export const createReply = createServerFn({ method: "POST" })
   .inputValidator(zodValidator(CreateReplyInputSchema))
   .handler(async ({ data }) => {
-    const session = await requireAuth();
+    const session = await getCachedSession();
+    if (!session) {
+      throw new AppError("AUTH_UNAUTHORIZED");
+    }
 
     const reply = await createReplyQuery({
       feedbackId: data.feedbackId,
@@ -81,14 +74,14 @@ export const createReply = createServerFn({ method: "POST" })
 export const updateReply = createServerFn({ method: "POST" })
   .inputValidator(zodValidator(UpdateReplyInputSchema))
   .handler(async ({ data }) => {
-    await requireAuth();
+    await getSessionUserId();
     return await updateReplyQuery(data.id, data.content);
   });
 
 export const deleteReply = createServerFn({ method: "POST" })
   .inputValidator(zodValidator(DeleteReplyInputSchema))
   .handler(async ({ data }) => {
-    await requireAuth();
+    await getSessionUserId();
     await deleteReplyQuery(data.id);
     return { success: true };
   });
