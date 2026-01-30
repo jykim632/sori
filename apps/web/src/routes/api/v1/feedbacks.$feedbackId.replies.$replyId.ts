@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getReplyWithProjectId, updateReply, deleteReply } from "@sori/database";
 import { authenticateApiKey, apiError, apiSuccess, apiOptions } from "@/lib/api-auth";
-import { checkApiRateLimit } from "@/lib/api-rate-limit";
+import { apiKeyLimiter } from "@/lib/api-utils";
 import { z } from "zod";
 
 const UpdateReplySchema = z.object({
@@ -21,7 +21,7 @@ export const Route = createFileRoute(
         }
 
         // 2. Rate limiting
-        const rateLimit = checkApiRateLimit(auth.project.apiKey!);
+        const rateLimit = apiKeyLimiter.check(auth.project.apiKey!);
         if (!rateLimit.allowed) {
           return apiError("Rate limit exceeded", 429, {
             retryAfter: Math.ceil((rateLimit.resetAt - Date.now()) / 1000),
@@ -83,7 +83,7 @@ export const Route = createFileRoute(
         }
 
         // 2. Rate limiting
-        const rateLimit = checkApiRateLimit(auth.project.apiKey!);
+        const rateLimit = apiKeyLimiter.check(auth.project.apiKey!);
         if (!rateLimit.allowed) {
           return apiError("Rate limit exceeded", 429, {
             retryAfter: Math.ceil((rateLimit.resetAt - Date.now()) / 1000),

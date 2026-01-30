@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getFeedbacksWithPagination, type FeedbackStatus, type FeedbackType, type Priority } from "@sori/database";
 import { authenticateApiKey, apiError, apiSuccess, apiOptions } from "@/lib/api-auth";
-import { checkApiRateLimit } from "@/lib/api-rate-limit";
+import { apiKeyLimiter } from "@/lib/api-utils";
 
 export const Route = createFileRoute("/api/v1/feedbacks")({
   server: {
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/api/v1/feedbacks")({
         }
 
         // 2. Rate limiting
-        const rateLimit = checkApiRateLimit(auth.project.apiKey!);
+        const rateLimit = apiKeyLimiter.check(auth.project.apiKey!);
         if (!rateLimit.allowed) {
           const response = apiError("Rate limit exceeded", 429, {
             retryAfter: Math.ceil((rateLimit.resetAt - Date.now()) / 1000),
