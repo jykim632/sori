@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: ko-KR
+
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  collapse_walkthrough: false
+  poem: false
+  path_filters:
+    - "!**/*.gen.ts"
+    - "!**/routeTree.gen.ts"
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/.output/**"
+  auto_review:
+    enabled: true
+    ignore_title_keywords:
+      - "chore"
+      - "WIP"
+    drafts: false
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false
+  learnings:
+    scope: auto
+  code_guidelines:
+    enabled: true
