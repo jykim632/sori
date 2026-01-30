@@ -128,6 +128,28 @@ const handleUpdateStatus = useCallback(async (id: string, currentStatus: string)
 - 이전 동작(별도 COUNT 쿼리)과 다르지만, pagination UI가 `totalPages > 1`일 때만 렌더링하므로 문제없음
 - 다음 네비게이션에서 올바른 count가 복원됨
 
+**검토: 조건부 롤백 (불채택)**
+
+빠른 더블 토글 시 이전 롤백이 최신 낙관적 상태를 덮어쓰는 문제를 방어하기 위해
+`f.status === newStatus`인 경우에만 롤백하는 방안 검토:
+
+```typescript
+// 제안 (불채택)
+catch {
+  setLocalFeedbacks(prev =>
+    prev.map(f => f.id === id
+      ? (f.status === newStatus ? { ...f, status: currentStatus } : f)
+      : f)
+  );
+}
+```
+
+불채택 사유:
+- 대부분 시나리오에서 무조건 롤백과 결과 동일 (더블 토글 시 currentStatus 값이 이미 현재 상태와 일치)
+- 트리플 토글(A→B→A→B) 케이스에서는 조건부도 같은 문제 발생 (`newStatus`와 최신 상태가 우연히 일치)
+- 성공 시 `router.invalidate()`가 서버 데이터를 동기화하므로 일시적 불일치는 자동 보정
+- 코드 가독성 대비 실질적 방어 효과 제한적
+
 ### 수정 순서
 
 1. Fix 1: Window 함수 적용 (feedback.ts) — Low risk
