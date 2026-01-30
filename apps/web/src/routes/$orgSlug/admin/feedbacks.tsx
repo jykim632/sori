@@ -229,13 +229,15 @@ function FeedbacksPage() {
 
     try {
       await updateFeedbackStatus({ data: { id, status: newStatus } });
+      // 성공: 백그라운드에서 서버 데이터 동기화 (pagination total, resolvedAt 등)
+      router.invalidate();
     } catch {
       // 실패 시 롤백
       setLocalFeedbacks(prev =>
         prev.map(f => f.id === id ? { ...f, status: currentStatus as FeedbackStatus } : f),
       );
     }
-  }, []);
+  }, [router]);
 
   const handleFilterChange = (updates: Partial<FeedbackSearchParams>) => {
     const hasStatusChange = "status" in updates;

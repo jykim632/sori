@@ -99,27 +99,39 @@ const data = rows.map(({ totalCount, ...rest }) => rest);
 const [localFeedbacks, setLocalFeedbacks] = useState(feedbacks);
 useEffect(() => { setLocalFeedbacks(feedbacks); }, [feedbacks]);
 
-const handleUpdateStatus = async (id: string, currentStatus: string) => {
+const handleUpdateStatus = useCallback(async (id: string, currentStatus: string) => {
   const newStatus = currentStatus === "OPEN" ? "RESOLVED" : "OPEN";
-  // 즉시 UI 업데이트
+  // 즉시 UI 업데이트 (낙관적)
   setLocalFeedbacks(prev =>
     prev.map(f => f.id === id ? { ...f, status: newStatus } : f)
   );
   try {
     await updateFeedbackStatus({ data: { id, status: newStatus } });
+    // 성공: 백그라운드에서 서버 데이터 동기화 (pagination total, resolvedAt 등)
+    router.invalidate();
   } catch {
     // 실패 시 롤백
     setLocalFeedbacks(prev =>
       prev.map(f => f.id === id ? { ...f, status: currentStatus } : f)
     );
   }
-};
+}, [router]);
 ```
+
+**낙관적 업데이트 + `router.invalidate()` 조합 이유:**
+- 즉시 UI 반영 → 사용자 체감 속도 향상
+- 성공 후 `router.invalidate()` → pagination total, `resolvedAt`, 다른 사용자 변경 등 서버 상태 동기화
+- `useEffect`의 `feedbacks` 동기화 → loader 완료 시 `localFeedbacks`가 최신 서버 데이터로 갱신
+
+**`COUNT(*) OVER()` 주의사항:**
+- 요청 페이지가 전체 페이지 수를 초과하면 (예: 데이터 삭제 후) rows가 0건이므로 `total=0` 반환
+- 이전 동작(별도 COUNT 쿼리)과 다르지만, pagination UI가 `totalPages > 1`일 때만 렌더링하므로 문제없음
+- 다음 네비게이션에서 올바른 count가 복원됨
 
 ### 수정 순서
 
 1. Fix 1: Window 함수 적용 (feedback.ts) — Low risk
-2. Fix 2: 낙관적 업데이트 (feedbacks.tsx) — Medium risk
+2. Fix 2: 낙관적 업데이트 + 백그라운드 동기화 (feedbacks.tsx) — Medium risk
 3. `pnpm build` 검증
 
 ### 테스트 케이스
