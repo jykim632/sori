@@ -6,41 +6,12 @@ import {
   type FeedbackType,
 } from "@sori/database";
 import { sendProjectNotifications } from "@/lib/notification";
+import { createRateLimiter, RATE_LIMIT_CONFIGS } from "@/lib/api-utils";
 import { isOriginAllowed, getCorsHeaders, DEFAULT_CORS_HEADERS } from "@/lib/api-utils/cors";
 import { sendWebhook } from "@/lib/webhook/sender";
 
-// Simple rate limiting (in-memory, per IP)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10;
-const CLEANUP_INTERVAL_MS = 300000; // 5 minutes
-
-// Periodic cleanup of expired entries to prevent memory leak
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, limit] of rateLimitMap) {
-    if (now > limit.resetTime) {
-      rateLimitMap.delete(ip);
-    }
-  }
-}, CLEANUP_INTERVAL_MS);
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const limit = rateLimitMap.get(ip);
-
-  if (!limit || now > limit.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-
-  if (limit.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return false;
-  }
-
-  limit.count++;
-  return true;
-}
+const feedbackLimiter = createRateLimiter(RATE_LIMIT_CONFIGS.feedbackSubmission);
+setInterval(() => feedbackLimiter.cleanup(), 300000); // 5 minutes
 
 export const Route = createFileRoute("/api/v1/feedback")({
   server: {
@@ -55,7 +26,7 @@ export const Route = createFileRoute("/api/v1/feedback")({
             request.headers.get("x-real-ip") ||
             "unknown";
 
-          if (!checkRateLimit(ip)) {
+          if (!feedbackLimiter.check(ip).allowed) {
             return new Response(
               JSON.stringify({ error: "Too many requests" }),
               {

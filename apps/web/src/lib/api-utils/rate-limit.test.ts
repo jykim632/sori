@@ -85,7 +85,7 @@ describe("createRateLimiter", () => {
       const limiter = createRateLimiter(defaultConfig, storage, getNow);
       const result = limiter.check("user-1");
 
-      expect(result.resetTime).toBe(currentTime + 60000);
+      expect(result.resetAt).toBe(currentTime + 60000);
     });
 
     it("should maintain resetTime within window", () => {
@@ -96,7 +96,7 @@ describe("createRateLimiter", () => {
       currentTime += 30000;
 
       const secondResult = limiter.check("user-1");
-      expect(secondResult.resetTime).toBe(firstResult.resetTime);
+      expect(secondResult.resetAt).toBe(firstResult.resetAt);
     });
   });
 

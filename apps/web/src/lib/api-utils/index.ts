@@ -1,6 +1,7 @@
 export { isValidUUID } from "./token-validation.ts";
 export {
   createRateLimiter,
+  apiKeyLimiter,
   RATE_LIMIT_CONFIGS,
   type RateLimitConfig,
   type RateLimitEntry,

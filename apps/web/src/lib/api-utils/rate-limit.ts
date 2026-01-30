@@ -18,7 +18,7 @@ export interface RateLimitConfig {
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
-  resetTime: number;
+  resetAt: number;
 }
 
 /**
@@ -49,7 +49,7 @@ export function createRateLimiter(
       return {
         allowed: true,
         remaining: maxRequests - 1,
-        resetTime,
+        resetAt: resetTime,
       };
     }
 
@@ -59,7 +59,7 @@ export function createRateLimiter(
       return {
         allowed: true,
         remaining: maxRequests - entry.count,
-        resetTime: entry.resetTime,
+        resetAt: entry.resetTime,
       };
     }
 
@@ -67,7 +67,7 @@ export function createRateLimiter(
     return {
       allowed: false,
       remaining: 0,
-      resetTime: entry.resetTime,
+      resetAt: entry.resetTime,
     };
   }
 
@@ -107,14 +107,28 @@ export function createRateLimiter(
 
 // Default configurations
 export const RATE_LIMIT_CONFIGS = {
-  // For ticket page views
+  // Widget feedback submission (IP-based)
+  feedbackSubmission: {
+    windowMs: 60000, // 1 minute
+    maxRequests: 10, // 10 requests per minute
+  },
+  // Ticket page views (IP-based)
   ticketView: {
     windowMs: 60000, // 1 minute
     maxRequests: 60, // 60 requests per minute
   },
-  // For customer replies
+  // Customer replies (IP+token-based)
   ticketReply: {
     windowMs: 60000, // 1 minute
     maxRequests: 10, // 10 replies per minute
   },
+  // Authenticated API endpoints (API key-based)
+  apiKey: {
+    windowMs: 60000, // 1 minute
+    maxRequests: 100, // 100 requests per minute
+  },
 } as const;
+
+// Singleton rate limiter for API key-authenticated endpoints
+export const apiKeyLimiter = createRateLimiter(RATE_LIMIT_CONFIGS.apiKey);
+setInterval(() => apiKeyLimiter.cleanup(), 60000);
