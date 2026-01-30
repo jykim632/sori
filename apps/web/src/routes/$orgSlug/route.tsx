@@ -2,7 +2,7 @@ import { createFileRoute, redirect, Outlet } from "@tanstack/react-router";
 import { getSession } from "@/server/auth";
 import { getUserOrganizations } from "@/server/organization";
 
-export const Route = createFileRoute("/$orgId")({
+export const Route = createFileRoute("/$orgSlug")({
   beforeLoad: async ({ params }) => {
     const [session, organizations] = await Promise.all([
       getSession(),
@@ -17,12 +17,12 @@ export const Route = createFileRoute("/$orgId")({
       throw redirect({ to: "/onboarding" });
     }
 
-    const currentOrg = organizations.find((o) => o.id === params.orgId);
+    const currentOrg = organizations.find((o) => o.slug === params.orgSlug);
 
     if (!currentOrg) {
       throw redirect({
-        to: "/$orgId/admin/feedbacks",
-        params: { orgId: organizations[0].id },
+        to: "/$orgSlug/admin/feedbacks",
+        params: { orgSlug: organizations[0].slug },
       });
     }
 

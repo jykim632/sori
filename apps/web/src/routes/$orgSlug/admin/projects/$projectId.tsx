@@ -16,14 +16,14 @@ import {
   type ProjectType,
 } from "@/components/projects/project-settings";
 
-export const Route = createFileRoute("/$orgId/admin/projects/$projectId")({
+export const Route = createFileRoute("/$orgSlug/admin/projects/$projectId")({
   component: ProjectSettingsPage,
   loader: async ({ params }) => {
     const project = await getProjectById({ data: { id: params.projectId } }) as ProjectType | null;
     if (!project) {
       throw redirect({
-        to: "/$orgId/admin/projects",
-        params: { orgId: params.orgId },
+        to: "/$orgSlug/admin/projects",
+        params: { orgSlug: params.orgSlug },
       });
     }
     return { project };
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/$orgId/admin/projects/$projectId")({
 
 function ProjectSettingsPage() {
   const { project } = Route.useLoaderData();
-  const { orgId } = Route.useParams();
+  const { orgSlug } = Route.useParams();
   const router = useRouter();
 
   // Theme config state (parent owns because Save/Reset need it)
@@ -101,8 +101,8 @@ function ProjectSettingsPage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <Link
-                to="/$orgId/admin/projects"
-                params={{ orgId }}
+                to="/$orgSlug/admin/projects"
+                params={{ orgSlug }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -162,8 +162,8 @@ function ProjectSettingsPage() {
               projectId={project.id}
               projectName={project.name}
               onDeleteSuccess={() => router.navigate({
-                to: "/$orgId/admin/projects",
-                params: { orgId },
+                to: "/$orgSlug/admin/projects",
+                params: { orgSlug },
               })}
             />
           </div>

@@ -4,13 +4,13 @@ import { signOut } from "@/lib/auth-client";
 import { ChevronDown, Plus, MessageSquare, FolderOpen, Building2, Settings } from "lucide-react";
 import type { Organization } from "@/components/admin";
 
-export const Route = createFileRoute("/$orgId/admin")({
+export const Route = createFileRoute("/$orgSlug/admin")({
   component: AdminLayout,
 });
 
 function AdminLayout() {
   const { session, organizations, currentOrg } = Route.useRouteContext();
-  const { orgId } = Route.useParams();
+  const { orgSlug } = Route.useParams();
   const router = useRouter();
   const matches = useMatches();
 
@@ -29,11 +29,11 @@ function AdminLayout() {
     router.navigate({ to: "/login" });
   };
 
-  const handleOrgChange = (newOrgId: string) => {
+  const handleOrgChange = (newOrgSlug: string) => {
     setIsOrgDropdownOpen(false);
     router.navigate({
-      to: `/$orgId/admin/${activeTab}`,
-      params: { orgId: newOrgId },
+      to: `/$orgSlug/admin/${activeTab}`,
+      params: { orgSlug: newOrgSlug },
     });
   };
 
@@ -57,7 +57,7 @@ function AdminLayout() {
                   {organizations.map((org: Organization) => (
                     <button
                       key={org.id}
-                      onClick={() => handleOrgChange(org.id)}
+                      onClick={() => handleOrgChange(org.slug)}
                       className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
                         org.id === currentOrg.id ? "bg-indigo-50" : ""
                       }`}
@@ -101,8 +101,8 @@ function AdminLayout() {
           {/* Tabs */}
           <div className="flex gap-6 -mb-px">
             <Link
-              to="/$orgId/admin/feedbacks"
-              params={{ orgId }}
+              to="/$orgSlug/admin/feedbacks"
+              params={{ orgSlug }}
               className={`flex items-center gap-2 py-3 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === "feedbacks"
                   ? "border-indigo-600 text-indigo-600"
@@ -113,8 +113,8 @@ function AdminLayout() {
               피드백
             </Link>
             <Link
-              to="/$orgId/admin/projects"
-              params={{ orgId }}
+              to="/$orgSlug/admin/projects"
+              params={{ orgSlug }}
               className={`flex items-center gap-2 py-3 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === "projects"
                   ? "border-indigo-600 text-indigo-600"
@@ -125,8 +125,8 @@ function AdminLayout() {
               프로젝트
             </Link>
             <Link
-              to="/$orgId/admin/settings"
-              params={{ orgId }}
+              to="/$orgSlug/admin/settings"
+              params={{ orgSlug }}
               className={`flex items-center gap-2 py-3 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === "settings"
                   ? "border-indigo-600 text-indigo-600"
