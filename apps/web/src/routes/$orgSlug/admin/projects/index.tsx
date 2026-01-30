@@ -4,7 +4,7 @@ import { getProjects, createProject, deleteProject, updateProject } from "@/serv
 import { Plus, X, FolderOpen, Copy, Check, Trash2, Palette, Pencil } from "lucide-react";
 import { DeleteProjectModal, EditProjectModal, type Project } from "@/components/admin";
 
-export const Route = createFileRoute("/$orgId/admin/projects/")({
+export const Route = createFileRoute("/$orgSlug/admin/projects/")({
   component: ProjectsPage,
   loader: async ({ context }): Promise<{ projects: Project[] }> => {
     const ctx = context as { currentOrg: { id: string } };
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/$orgId/admin/projects/")({
 
 function ProjectsPage() {
   const { projects } = Route.useLoaderData() as { projects: Project[] };
-  const { orgId } = Route.useParams();
+  const { orgSlug } = Route.useParams();
   const { currentOrg } = Route.useRouteContext() as { currentOrg: { id: string } };
   const router = useRouter();
 
@@ -184,8 +184,8 @@ function ProjectsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Link
-                  to="/$orgId/admin/projects/$projectId"
-                  params={{ orgId, projectId: project.id }}
+                  to="/$orgSlug/admin/projects/$projectId"
+                  params={{ orgSlug, projectId: project.id }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                 >
                   <Palette className="w-4 h-4" />

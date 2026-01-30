@@ -22,7 +22,7 @@ import {
   createFeedbackColumns,
 } from "@/components/admin/index";
 
-export const Route = createFileRoute("/$orgId/admin/feedbacks")({
+export const Route = createFileRoute("/$orgSlug/admin/feedbacks")({
   component: FeedbacksPage,
   validateSearch: (search: Record<string, unknown>): FeedbackSearchParams => ({
     status: validStatuses.includes(search.status as FeedbackStatus)
@@ -178,7 +178,7 @@ function FeedbacksPage() {
   const projects = loaderData?.projects ?? [];
   const defaultProjectId = loaderData?.defaultProjectId;
   const search = Route.useSearch();
-  const { orgId } = Route.useParams();
+  const { orgSlug } = Route.useParams();
   const router = useRouter();
   const routerState = useRouterState({ select: (s) => s.isLoading });
   const isRouterLoading = routerState;
@@ -261,8 +261,8 @@ function FeedbacksPage() {
     }
 
     router.navigate({
-      to: "/$orgId/admin/feedbacks",
-      params: { orgId },
+      to: "/$orgSlug/admin/feedbacks",
+      params: { orgSlug },
       search: {
         status: hasStatusChange ? updates.status : filterStatus,
         type: hasTypeChange ? updates.type : filterType,
@@ -292,8 +292,8 @@ function FeedbacksPage() {
   const handleClearFilters = () => {
     setSearchInput("");
     router.navigate({
-      to: "/$orgId/admin/feedbacks",
-      params: { orgId },
+      to: "/$orgSlug/admin/feedbacks",
+      params: { orgSlug },
       search: {},
     });
   };
