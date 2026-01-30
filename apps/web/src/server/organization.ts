@@ -11,6 +11,7 @@ import {
 import { getSessionUserId, requireOrgMembership, requireOrgAdmin } from "./auth-helpers";
 import { sendTestWebhook } from "@/lib/webhook";
 import { AppError } from "@/lib/errors";
+import { validateUrl } from "@/lib/validators/url";
 import { zodValidator } from "@/lib/zod-validator";
 import {
   CreateOrganizationInputSchema,
@@ -95,13 +96,8 @@ export const updateOrganizationWebhook = createServerFn({ method: "POST" })
     // 관리자 권한 확인
     await requireOrgAdmin(organizationId);
 
-    // Validate URL if provided
     if (webhookUrl) {
-      try {
-        new URL(webhookUrl);
-      } catch {
-        throw new AppError("VAL_INVALID_URL");
-      }
+      validateUrl(webhookUrl);
     }
 
     return await updateOrganizationWebhookQuery(organizationId, webhookUrl);

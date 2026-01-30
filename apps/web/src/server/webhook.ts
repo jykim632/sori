@@ -11,6 +11,7 @@ import {
 import { getOrganizationWithProjects } from "./organization";
 import { sendTestWebhook } from "@/lib/webhook";
 import { AppError } from "@/lib/errors";
+import { validateUrl } from "@/lib/validators/url";
 import { zodValidator } from "@/lib/zod-validator";
 import { requireOrgMembership } from "./auth-helpers";
 import {
@@ -46,12 +47,7 @@ export const createWebhook = createServerFn({ method: "POST" })
     // 권한 검증
     await requireOrgMembership(organizationId);
 
-    // URL 형식 검증 (명확한 에러 메시지 VAL_INVALID_URL)
-    try {
-      new URL(url);
-    } catch {
-      throw new AppError("VAL_INVALID_URL");
-    }
+    validateUrl(url);
 
     // Check plan limits
     const org = await getOrganizationWithProjects({ data: { organizationId } });
@@ -86,13 +82,8 @@ export const updateWebhook = createServerFn({ method: "POST" })
     }
     await requireOrgMembership(webhook.organization.id);
 
-    // Validate URL if provided
     if (url) {
-      try {
-        new URL(url);
-      } catch {
-        throw new AppError("VAL_INVALID_URL");
-      }
+      validateUrl(url);
     }
 
     return await updateWebhookQuery({ id, name, url, enabled });
