@@ -177,28 +177,30 @@ export async function getFeedbacksWithPagination(
 
   const whereClause = conditions.join(" AND ");
 
-  // Count query
-  const countSql = `SELECT COUNT(*) as total FROM feedback WHERE ${whereClause}`;
-  const countResult = await queryOne<{ total: string }>(countSql, params);
-  const total = parseInt(countResult?.total || "0", 10);
-
-  // Data query
   const orderColumn = orderBy === "updatedAt" ? "updated_at" : "created_at";
   const offset = (page - 1) * limit;
 
-  const dataSql = `
+  // Single query with window function (COUNT + SELECT combined)
+  const sql = `
     SELECT
       id, type, message, email, status, priority, metadata,
       project_id as "projectId", token, token_accessed_at as "tokenAccessedAt",
       privacy_agreed_at as "privacyAgreedAt",
-      created_at as "createdAt", resolved_at as "resolvedAt"
+      created_at as "createdAt", resolved_at as "resolvedAt",
+      COUNT(*) OVER() as "totalCount"
     FROM feedback
     WHERE ${whereClause}
     ORDER BY ${orderColumn} ${order.toUpperCase()}
     LIMIT $${paramIndex++} OFFSET $${paramIndex}
   `;
 
-  const data = await query<Feedback>(dataSql, [...params, limit, offset]);
+  const rows = await query<Feedback & { totalCount: string }>(
+    sql,
+    [...params, limit, offset],
+  );
+
+  const total = rows.length > 0 ? parseInt(rows[0].totalCount, 10) : 0;
+  const data = rows.map(({ totalCount, ...rest }) => rest as Feedback);
 
   return {
     data,
@@ -434,16 +436,6 @@ export async function getFeedbacksFiltered(
 
   const whereClause = conditions.join(" AND ");
 
-  // Count query
-  const countSql = `
-    SELECT COUNT(*) as total
-    FROM feedback f
-    JOIN project p ON f.project_id = p.id
-    WHERE ${whereClause}
-  `;
-  const countResult = await queryOne<{ total: string }>(countSql, params);
-  const total = parseInt(countResult?.total || "0", 10);
-
   // Build ORDER BY clause
   let orderClause: string;
   if (orderBy === "priority") {
@@ -452,10 +444,10 @@ export async function getFeedbacksFiltered(
     orderClause = `f.created_at ${order.toUpperCase()}`;
   }
 
-  // Data query
   const offset = (page - 1) * limit;
 
-  const dataSql = `
+  // Single query with window function (COUNT + SELECT combined)
+  const sql = `
     SELECT
       f.id, f.type, f.message, f.email, f.status, f.priority, f.metadata,
       f.project_id as "projectId", f.token, f.token_accessed_at as "tokenAccessedAt",
@@ -469,7 +461,8 @@ export async function getFeedbacksFiltered(
         'organizationId', p.organization_id,
         'createdAt', p.created_at,
         'updatedAt', p.updated_at
-      ) as project
+      ) as project,
+      COUNT(*) OVER() as "totalCount"
     FROM feedback f
     JOIN project p ON f.project_id = p.id
     WHERE ${whereClause}
@@ -477,7 +470,13 @@ export async function getFeedbacksFiltered(
     LIMIT $${paramIndex++} OFFSET $${paramIndex}
   `;
 
-  const data = await query<FeedbackWithProject>(dataSql, [...params, limit, offset]);
+  const rows = await query<FeedbackWithProject & { totalCount: string }>(
+    sql,
+    [...params, limit, offset],
+  );
+
+  const total = rows.length > 0 ? parseInt(rows[0].totalCount, 10) : 0;
+  const data = rows.map(({ totalCount, ...rest }) => rest as FeedbackWithProject);
 
   return {
     data,
