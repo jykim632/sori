@@ -103,6 +103,11 @@ export function NotificationSettings({ projectId }: NotificationSettingsProps) {
       return;
     }
 
+    if (emailEnabled && validEmails.length === 0) {
+      setError("이메일 알림을 활성화하려면 최소 1명의 수신자를 입력해주세요");
+      return;
+    }
+
     if (slackEnabled && !slackWebhookUrl) {
       setError("Slack 알림을 활성화하려면 Webhook URL을 입력해주세요");
       return;
