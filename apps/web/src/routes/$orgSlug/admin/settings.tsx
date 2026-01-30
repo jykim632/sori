@@ -10,7 +10,7 @@ import {
 import { Plus, X, Send, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { getWebhookTypeLabel, getWebhookTypeColor, type Webhook, type Organization } from "@/components/admin";
 
-export const Route = createFileRoute("/$orgId/admin/settings")({
+export const Route = createFileRoute("/$orgSlug/admin/settings")({
   component: SettingsPage,
   loader: async ({ context }) => {
     const ctx = context as { currentOrg: Organization };
