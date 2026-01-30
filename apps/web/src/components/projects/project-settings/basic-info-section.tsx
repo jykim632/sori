@@ -8,6 +8,17 @@ type Props = {
   initialAllowedOrigins: string[];
 };
 
+/**
+ * Render a basic project information settings section with inputs for project name and allowed origins and a save action.
+ *
+ * The component manages local state for the editable project name and allowed origins (one per line), validates the name before saving,
+ * transforms the allowed origins into an array by splitting on newlines and trimming entries, and calls `updateProject` with the updated values.
+ *
+ * @param projectId - The id of the project to update when the Save button is pressed
+ * @param initialName - Initial value for the project name input
+ * @param initialAllowedOrigins - Initial list of allowed origin strings; shown in the textarea joined by newlines
+ * @returns A React element containing the inputs and a save button that persists changes to the project
+ */
 export function BasicInfoSection({ projectId, initialName, initialAllowedOrigins }: Props) {
   const [projectName, setProjectName] = useState(initialName);
   const [allowedOrigins, setAllowedOrigins] = useState(

@@ -30,6 +30,14 @@ export const Route = createFileRoute("/$orgId/admin/projects/$projectId")({
   },
 });
 
+/**
+ * Render the project settings UI for editing and previewing a project's widget configuration.
+ *
+ * Displays sections for basic information, API key management, notifications, theme settings, and danger actions.
+ * Provides reset and save controls; the save action persists the current `widgetConfig` to the server.
+ *
+ * @returns A React element containing the project settings page and live widget preview.
+ */
 function ProjectSettingsPage() {
   const { project } = Route.useLoaderData();
   const { orgId } = Route.useParams();

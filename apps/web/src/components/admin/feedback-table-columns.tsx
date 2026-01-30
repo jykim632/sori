@@ -3,6 +3,17 @@ import type { Column } from "@/components/DataTable";
 import type { FeedbackWithProject } from "./types";
 import { getTypeIcon, getTypeLabel, getStatusLabel } from "./utils";
 
+/**
+ * Create column definitions for the admin feedback data table.
+ *
+ * The returned columns render status, type, message, project, date, and actions
+ * for each feedback row. The actions column renders a toggle button that stops
+ * event propagation and invokes `onUpdateStatus` with the feedback id and its
+ * current status.
+ *
+ * @param onUpdateStatus - Callback invoked when the row action button is clicked; receives the feedback `id` and the row's current status.
+ * @returns An array of Column<FeedbackWithProject> describing the table's columns.
+ */
 export function createFeedbackColumns(
   onUpdateStatus: (id: string, currentStatus: string) => void,
 ): Column<FeedbackWithProject>[] {

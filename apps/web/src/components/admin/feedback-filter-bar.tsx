@@ -36,6 +36,27 @@ type Props = {
   onRefresh: () => void;
 };
 
+/**
+ * Renders a two-row feedback filter bar with search, date range, status pills, type/project filters, sorting, and controls for refresh and clearing filters.
+ *
+ * @param searchInput - Current search text shown in the search input
+ * @param onSearchChange - Called with the new search text when the user edits or clears the search input
+ * @param activeStatus - Currently selected feedback status filter, or `undefined` for no status filter
+ * @param filterType - Currently selected feedback type filter, or `undefined` for no type filter
+ * @param activeProjectFilter - Currently selected project id for filtering, or `undefined` for no project filter
+ * @param filterDateFrom - Start date of the active date range filter in ISO string format, or `undefined`
+ * @param filterDateTo - End date of the active date range filter in ISO string format, or `undefined`
+ * @param filterOrderBy - Field used for ordering (e.g., `"createdAt"` or `"priority"`), or `undefined`
+ * @param filterOrder - Order direction (`"asc"` or `"desc"`), or `undefined`
+ * @param projects - Array of available projects shown in the project select
+ * @param totalCount - Total number of feedback items matching current filters
+ * @param isLoading - Whether a refresh or loading state is active; disables the refresh control when true
+ * @param hasActiveFilters - Whether any filters are currently active; controls visibility of the "clear filters" button
+ * @param onFilterChange - Called with a partial set of search/filter parameters to update the active filters
+ * @param onClearFilters - Called when the user requests to reset all filters
+ * @param onRefresh - Called when the user clicks the refresh button
+ * @returns The rendered filter bar element
+ */
 export function FeedbackFilterBar({
   searchInput,
   onSearchChange,

@@ -11,6 +11,16 @@ type Props = {
   onConfigChange: (key: keyof WidgetConfig, value: string) => void;
 };
 
+/**
+ * Renders a theme configuration panel allowing selection of presets and editing of basic and advanced style and widget settings.
+ *
+ * @param config - Current widget configuration (preset, position, greeting, locale, etc.).
+ * @param resolvedTheme - Resolved theme styles (colors, sizes, radius, shadow, etc.) used to populate control values and active states.
+ * @param onPresetChange - Called with a ThemePreset when the user selects a preset.
+ * @param onStyleChange - Called with a ThemeStyles key and new value when a style option is changed.
+ * @param onConfigChange - Called with a WidgetConfig key and new value when a widget configuration option is changed.
+ * @returns The settings section UI as a React element.
+ */
 export function ThemeSettingsSection({
   config,
   resolvedTheme,

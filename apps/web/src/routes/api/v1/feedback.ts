@@ -25,6 +25,14 @@ setInterval(() => {
   }
 }, CLEANUP_INTERVAL_MS);
 
+/**
+ * Enforces per-IP rate limiting using an in-memory sliding window.
+ *
+ * Updates the internal rate limit counters for `ip`, creating a new window if none exists or the previous window expired.
+ *
+ * @param ip - The client IP address to check and record a request for
+ * @returns `true` if the request is allowed (counter incremented or new window started), `false` if the IP has exceeded the allowed requests for the current window
+ */
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   const limit = rateLimitMap.get(ip);

@@ -7,6 +7,14 @@ type Props = {
   greeting?: string;
 };
 
+/**
+ * Renders a floating, themeable preview widget with a collapsible feedback panel and trigger button.
+ *
+ * @param theme - Theme tokens controlling fonts, colors, sizes (triggerSize, panelWidth, fontSize), border radius, and shadow used to style the widget
+ * @param position - Anchor for placement; one of "bottom-right", "bottom-left", "top-right", or "top-left"
+ * @param greeting - Optional header text displayed in the panel header; if omitted a default prompt is shown
+ * @returns A React element representing the preview widget
+ */
 export function WidgetPreview({ theme, position, greeting }: Props) {
   const [isOpen, setIsOpen] = useState(true);
 
