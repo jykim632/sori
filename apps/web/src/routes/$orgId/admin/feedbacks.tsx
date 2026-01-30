@@ -2,22 +2,8 @@ import { createFileRoute, useRouter, useRouterState } from "@tanstack/react-rout
 import { useState, useEffect, useRef } from "react";
 import { getFeedbacksFiltered, updateFeedbackStatus } from "@/server/feedback";
 import { getProjects } from "@/server/projects";
-import { DateRangePicker } from "@/components/DateRangePicker";
 import { DataTable } from "@/components/DataTable";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  X,
-  Mail,
-  Bug,
-  HelpCircle,
-  Lightbulb,
-  Check,
-  RotateCcw,
-  ArrowUpDown,
-  RefreshCw,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   type FeedbackSearchParams,
   type FeedbackWithProject,
@@ -31,10 +17,9 @@ import {
   validOrder,
   type OrderBy,
   type Order,
-  getTypeIcon,
-  getTypeLabel,
-  getStatusLabel,
   FeedbackDetailModal,
+  FeedbackFilterBar,
+  createFeedbackColumns,
 } from "@/components/admin/index";
 
 export const Route = createFileRoute("/$orgId/admin/feedbacks")({
@@ -303,333 +288,28 @@ function FeedbacksPage() {
   return (
     <div className="space-y-4">
       {/* 검색 + 필터 바 */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* 검색 바 */}
-        <div className="px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="메시지, 이메일로 검색..."
-                value={searchInput}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-              {searchInput && (
-                <button
-                  onClick={() => handleSearchChange("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* 날짜 범위 필터 */}
-            <DateRangePicker
-              startDate={filterDateFrom}
-              endDate={filterDateTo}
-              onChange={(start, end) => handleFilterChange({ dateFrom: start, dateTo: end })}
-              placeholder="기간 선택"
-            />
-
-            {/* 상태 필터 */}
-            <div className="flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => handleFilterChange({ status: undefined })}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
-                  !activeStatus ? "bg-indigo-50 text-indigo-600" : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                전체
-              </button>
-              <button
-                onClick={() => handleFilterChange({ status: "OPEN" })}
-                className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
-                  activeStatus === "OPEN"
-                    ? "bg-yellow-50 text-yellow-700"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-yellow-400" />
-                대기중
-              </button>
-              <button
-                onClick={() => handleFilterChange({ status: "IN_PROGRESS" })}
-                className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
-                  activeStatus === "IN_PROGRESS"
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-blue-400" />
-                처리중
-              </button>
-              <button
-                onClick={() => handleFilterChange({ status: "RESOLVED" })}
-                className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
-                  activeStatus === "RESOLVED"
-                    ? "bg-green-50 text-green-700"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-green-400" />
-                완료
-              </button>
-              <button
-                onClick={() => handleFilterChange({ status: "CLOSED" })}
-                className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-200 ${
-                  activeStatus === "CLOSED"
-                    ? "bg-gray-100 text-gray-700"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-gray-400" />
-                닫힘
-              </button>
-            </div>
-
-            {/* 새로고침 + 결과 수 */}
-            <div className="ml-auto text-sm text-gray-400 flex items-center gap-2">
-              <button
-                onClick={() => router.invalidate()}
-                disabled={isRouterLoading}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                title="새로고침"
-              >
-                <RefreshCw className={`w-4 h-4 ${isRouterLoading ? "animate-spin" : ""}`} />
-              </button>
-              {pagination.total}개
-            </div>
-          </div>
-        </div>
-
-        {/* 추가 필터 */}
-        <div className="px-4 py-3 flex items-center gap-3 bg-gray-50/50">
-          {/* 유형 필터 */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 uppercase tracking-wide">유형</span>
-            <div className="flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => handleFilterChange({ type: undefined })}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                  !filterType
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                전체
-              </button>
-              <button
-                onClick={() => handleFilterChange({ type: "BUG" })}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 border-l border-gray-200 ${
-                  filterType === "BUG"
-                    ? "bg-red-50 text-red-600"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <Bug className="w-3 h-3" />
-                버그
-              </button>
-              <button
-                onClick={() => handleFilterChange({ type: "INQUIRY" })}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 border-l border-gray-200 ${
-                  filterType === "INQUIRY"
-                    ? "bg-blue-50 text-blue-600"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <HelpCircle className="w-3 h-3" />
-                문의
-              </button>
-              <button
-                onClick={() => handleFilterChange({ type: "FEATURE" })}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 border-l border-gray-200 ${
-                  filterType === "FEATURE"
-                    ? "bg-purple-50 text-purple-600"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <Lightbulb className="w-3 h-3" />
-                기능요청
-              </button>
-            </div>
-          </div>
-
-          <div className="h-6 w-px bg-gray-200" />
-
-          {/* 프로젝트 필터 */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 uppercase tracking-wide">프로젝트</span>
-            <select
-              value={activeProjectFilter || ""}
-              onChange={(e) => handleFilterChange({ project: e.target.value })}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors appearance-none pr-8 bg-no-repeat bg-[length:16px] bg-[center_right_8px] ${
-                activeProjectFilter && activeProjectFilter !== "all"
-                  ? "border-indigo-200 bg-indigo-50 text-indigo-600"
-                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-              }`}
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-              }}
-            >
-              <option value="all">전체</option>
-              {(projects as Project[]).map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="h-6 w-px bg-gray-200" />
-
-          {/* 정렬 */}
-          <div className="flex items-center gap-2">
-            <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
-            <select
-              value={`${filterOrderBy || "createdAt"}-${filterOrder || "desc"}`}
-              onChange={(e) => {
-                const [orderBy, order] = e.target.value.split("-") as [OrderBy, Order];
-                handleFilterChange({ orderBy, order });
-              }}
-              className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-gray-300 transition-colors appearance-none pr-7 bg-no-repeat bg-[length:14px] bg-[center_right_6px]"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-              }}
-            >
-              <option value="createdAt-desc">최신순</option>
-              <option value="createdAt-asc">오래된순</option>
-              <option value="priority-desc">우선순위 높은순</option>
-              <option value="priority-asc">우선순위 낮은순</option>
-            </select>
-          </div>
-
-          {/* 필터 초기화 */}
-          {hasActiveFilters && (
-            <>
-              <div className="h-6 w-px bg-gray-200" />
-              <button
-                onClick={handleClearFilters}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-                필터 초기화
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <FeedbackFilterBar
+        searchInput={searchInput}
+        onSearchChange={handleSearchChange}
+        activeStatus={activeStatus}
+        filterType={filterType}
+        activeProjectFilter={activeProjectFilter}
+        filterDateFrom={filterDateFrom}
+        filterDateTo={filterDateTo}
+        filterOrderBy={filterOrderBy}
+        filterOrder={filterOrder}
+        projects={projects}
+        totalCount={pagination.total}
+        isLoading={isRouterLoading}
+        hasActiveFilters={!!hasActiveFilters}
+        onFilterChange={handleFilterChange}
+        onClearFilters={handleClearFilters}
+        onRefresh={() => router.invalidate()}
+      />
 
       {/* 피드백 테이블 */}
       <DataTable<FeedbackWithProject>
-        columns={[
-          {
-            key: "status",
-            header: "상태",
-            render: (feedback) => (
-              <span
-                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  feedback.status === "OPEN"
-                    ? "bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20"
-                    : feedback.status === "IN_PROGRESS"
-                      ? "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20"
-                      : feedback.status === "RESOLVED"
-                        ? "bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20"
-                        : "bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20"
-                }`}
-              >
-                {getStatusLabel(feedback.status)}
-              </span>
-            ),
-          },
-          {
-            key: "type",
-            header: "유형",
-            render: (feedback) => (
-              <span
-                className={`inline-flex items-center gap-1.5 text-sm font-medium ${
-                  feedback.type === "BUG"
-                    ? "text-red-600"
-                    : feedback.type === "FEATURE"
-                      ? "text-purple-600"
-                      : "text-blue-600"
-                }`}
-              >
-                {getTypeIcon(feedback.type)}
-                <span className="hidden sm:inline">{getTypeLabel(feedback.type)}</span>
-              </span>
-            ),
-          },
-          {
-            key: "message",
-            header: "내용",
-            cellClassName: "max-w-md",
-            render: (feedback) => (
-              <div>
-                <p
-                  className="text-sm text-gray-900 font-medium line-clamp-2"
-                  title={feedback.message}
-                >
-                  {feedback.message}
-                </p>
-                {feedback.email && (
-                  <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                    <Mail className="w-3 h-3" />
-                    {feedback.email}
-                  </p>
-                )}
-              </div>
-            ),
-          },
-          {
-            key: "project",
-            header: "프로젝트",
-            render: (feedback) => (
-              <span className="text-sm text-gray-500">{feedback.project?.name}</span>
-            ),
-          },
-          {
-            key: "date",
-            header: "날짜",
-            render: (feedback) => {
-              const date = new Date(feedback.createdAt);
-              return (
-                <div className="text-sm text-gray-400">
-                  <div>{date.toLocaleDateString("ko-KR")}</div>
-                  <div className="text-xs">{date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</div>
-                </div>
-              );
-            },
-          },
-          {
-            key: "actions",
-            header: "작업",
-            headerClassName: "text-right",
-            cellClassName: "text-right",
-            render: (feedback) => (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleUpdateStatus(feedback.id, feedback.status);
-                }}
-                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
-                  feedback.status === "OPEN"
-                    ? "text-green-600 hover:bg-green-50"
-                    : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                }`}
-                title={feedback.status === "OPEN" ? "완료 처리" : "다시 열기"}
-              >
-                {feedback.status === "OPEN" ? (
-                  <Check className="w-4 h-4" />
-                ) : (
-                  <RotateCcw className="w-4 h-4" />
-                )}
-              </button>
-            ),
-          },
-        ]}
+        columns={createFeedbackColumns(handleUpdateStatus)}
         data={feedbacks}
         keyExtractor={(feedback) => feedback.id}
         onRowClick={setSelectedFeedback}

@@ -7,3 +7,4 @@ export {
   type RateLimitEntry,
   type RateLimitResult,
 } from "./rate-limit.ts";
+export { isOriginAllowed, getCorsHeaders, DEFAULT_CORS_HEADERS } from "./cors.ts";
