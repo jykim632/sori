@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./utils";
 export { getFormatter } from "./formatters";
+export { sendTestWebhook } from "./test-webhook";
 export { sendWebhook, isWebhookUrlAllowed } from "./sender";
 
 import type { FeedbackData, ProjectData, OrganizationData } from "./types";
