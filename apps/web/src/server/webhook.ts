@@ -9,7 +9,7 @@ import {
   type Plan,
 } from "@sori/database";
 import { getOrganizationWithProjects } from "./organization";
-import { formatWebhookPayload } from "@/lib/webhook";
+import { sendTestWebhook } from "@/lib/webhook";
 import { AppError } from "@/lib/errors";
 import { zodValidator } from "@/lib/zod-validator";
 import { requireOrgMembership } from "./auth-helpers";
@@ -125,36 +125,12 @@ export const testWebhookById = createServerFn({ method: "POST" })
     // 권한 검증
     await requireOrgMembership(webhook.organization.id);
 
-    const testFeedback = {
-      id: "test_" + Date.now(),
-      type: "BUG" as const,
-      message: "이것은 테스트 피드백입니다.",
-      email: "test@example.com",
-      metadata: { url: "https://example.com" },
-    };
-
-    const payload = formatWebhookPayload(
-      webhook.url,
-      testFeedback,
-      { id: webhook.organization.projects[0]?.id || "test", name: webhook.organization.projects[0]?.name || "Test Project" },
-      { id: webhook.organization.id, name: webhook.organization.name },
-      true
-    );
-
-    try {
-      const response = await fetch(webhook.url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "User-Agent": "Sori-Webhook/1.0" },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        return { success: true, message: `성공! (${response.status})` };
-      } else {
-        const text = await response.text().catch(() => "");
-        return { success: false, message: `실패: ${response.status}${text ? ` - ${text.slice(0, 100)}` : ""}` };
-      }
-    } catch (error) {
-      return { success: false, message: error instanceof Error ? error.message : "연결 실패" };
-    }
+    return await sendTestWebhook({
+      webhookUrl: webhook.url,
+      project: {
+        id: webhook.organization.projects[0]?.id || "test",
+        name: webhook.organization.projects[0]?.name || "Test Project",
+      },
+      organization: { id: webhook.organization.id, name: webhook.organization.name },
+    });
   });

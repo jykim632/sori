@@ -9,7 +9,7 @@ import {
   getOrganizationBySlug,
 } from "@sori/database";
 import { getSessionUserId, requireOrgMembership, requireOrgAdmin } from "./auth-helpers";
-import { formatWebhookPayload } from "@/lib/webhook";
+import { sendTestWebhook } from "@/lib/webhook";
 import { AppError } from "@/lib/errors";
 import { zodValidator } from "@/lib/zod-validator";
 import {
@@ -116,45 +116,9 @@ export const testWebhook = createServerFn({ method: "POST" })
 
     const { webhookUrl, organizationId, organizationName, projectId, projectName } = data;
 
-    const testFeedback = {
-      id: "test_" + Date.now(),
-      type: "BUG" as const,
-      message: "이것은 테스트 피드백입니다.",
-      email: "test@example.com",
-      metadata: { url: "https://example.com" },
-    };
-
-    const testPayload = formatWebhookPayload(
+    return await sendTestWebhook({
       webhookUrl,
-      testFeedback,
-      { id: projectId || "test_project", name: projectName || "Test Project" },
-      { id: organizationId, name: organizationName },
-      true
-    );
-
-    try {
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "Sori-Webhook/1.0",
-        },
-        body: JSON.stringify(testPayload),
-      });
-
-      if (response.ok) {
-        return { success: true, message: `성공! (${response.status})` };
-      } else {
-        const text = await response.text().catch(() => "");
-        return {
-          success: false,
-          message: `실패: ${response.status} ${response.statusText}${text ? ` - ${text.slice(0, 100)}` : ""}`,
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : "연결 실패",
-      };
-    }
+      project: { id: projectId || "test_project", name: projectName || "Test Project" },
+      organization: { id: organizationId, name: organizationName },
+    });
   });
