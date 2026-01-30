@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter, useRouterState } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getFeedbacksFiltered, updateFeedbackStatus } from "@/server/feedback";
 import { getProjects } from "@/server/projects";
 import { DataTable } from "@/components/DataTable";
@@ -198,6 +198,12 @@ function FeedbacksPage() {
   // URL에 project가 없으면 defaultProjectId 사용 (UI 표시용)
   const activeProjectFilter = filterProject ?? defaultProjectId;
 
+  // 낙관적 업데이트를 위한 로컬 상태
+  const [localFeedbacks, setLocalFeedbacks] = useState(feedbacks);
+  useEffect(() => {
+    setLocalFeedbacks(feedbacks);
+  }, [feedbacks]);
+
   const [searchInput, setSearchInput] = useState(filterSearch || "");
   const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const [pendingStatus, setPendingStatus] = useState<FeedbackStatus | undefined | null>(null);
@@ -213,11 +219,23 @@ function FeedbacksPage() {
     }
   }, [isRouterLoading, filterStatus]);
 
-  const handleUpdateStatus = async (id: string, currentStatus: string) => {
+  const handleUpdateStatus = useCallback(async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "OPEN" ? "RESOLVED" : "OPEN";
-    await updateFeedbackStatus({ data: { id, status: newStatus } });
-    router.invalidate();
-  };
+
+    // 즉시 UI 업데이트 (낙관적)
+    setLocalFeedbacks(prev =>
+      prev.map(f => f.id === id ? { ...f, status: newStatus as FeedbackStatus } : f),
+    );
+
+    try {
+      await updateFeedbackStatus({ data: { id, status: newStatus } });
+    } catch {
+      // 실패 시 롤백
+      setLocalFeedbacks(prev =>
+        prev.map(f => f.id === id ? { ...f, status: currentStatus as FeedbackStatus } : f),
+      );
+    }
+  }, []);
 
   const handleFilterChange = (updates: Partial<FeedbackSearchParams>) => {
     const hasStatusChange = "status" in updates;
@@ -310,7 +328,7 @@ function FeedbacksPage() {
       {/* 피드백 테이블 */}
       <DataTable<FeedbackWithProject>
         columns={createFeedbackColumns(handleUpdateStatus)}
-        data={feedbacks}
+        data={localFeedbacks}
         keyExtractor={(feedback) => feedback.id}
         onRowClick={setSelectedFeedback}
         emptyMessage={
