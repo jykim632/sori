@@ -9,6 +9,15 @@ type Props = {
   feedbackEmail: string | null;
 };
 
+/**
+ * Render and manage the replies section for a feedback item.
+ *
+ * Displays existing replies, allows creating new replies (as internal memo or customer-facing with an optional email notification), and enables deletion of admin replies. Loads replies when `feedbackId` changes and manages loading, creating, and deleting states.
+ *
+ * @param feedbackId - The feedback item's ID whose replies are displayed and managed
+ * @param feedbackEmail - The customer's email used to enable the "notify by email" option; `null` disables email notifications
+ * @returns The React element that renders the feedback replies UI
+ */
 export function FeedbackRepliesSection({ feedbackId, feedbackEmail }: Props) {
   const [replies, setReplies] = useState<Reply[]>([]);
   const [newReplyContent, setNewReplyContent] = useState("");

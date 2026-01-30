@@ -22,6 +22,12 @@ const BLOCKED_HOST_PATTERNS = [
   /^\[::1\]$/,
 ];
 
+/**
+ * Determines whether a webhook URL is permitted for outbound requests.
+ *
+ * @param url - The webhook URL to validate
+ * @returns `true` if the URL uses HTTPS, the hostname does not match any blocked patterns, and the hostname equals or is a subdomain of an allowed host; `false` otherwise.
+ */
 export function isWebhookUrlAllowed(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -47,7 +53,15 @@ export function isWebhookUrlAllowed(url: string): boolean {
   }
 }
 
-// Webhook sending
+/**
+ * Send feedback to an external webhook endpoint with provider-specific payload formatting.
+ *
+ * Validates the webhook URL before sending; if the URL is not allowed the function logs a warning and exits without making a network request. For known providers ("SLACK", "DISCORD") the payload is formatted to their expected structure; otherwise a generic JSON payload is sent. The outbound request is aborted if it does not complete within 10 seconds.
+ *
+ * @param webhook - Object with `url` (destination webhook URL) and `type` (provider identifier: `"SLACK"`, `"DISCORD"`, or other custom types)
+ * @param feedback - Feedback details: `type` (e.g., `"BUG"`, `"INQUIRY"`, `"FEATURE"`), `message` (the feedback content), and `email` (optional sender email)
+ * @param projectName - Name of the project to include in the webhook payload
+ */
 export async function sendWebhook(
   webhook: { url: string; type: string },
   feedback: { type: string; message: string; email: string | null },

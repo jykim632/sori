@@ -171,6 +171,15 @@ type LoaderData = {
   defaultProjectId?: string;
 };
 
+/**
+ * Admin page that lists and filters feedback items for an organization.
+ *
+ * Renders a filter bar, feedback table, pagination controls, and a detail modal while managing
+ * filter/search state, navigation of search params, debounced search input, optimistic status updates,
+ * and data loading/invalidation via the route loader and router.
+ *
+ * @returns The rendered admin feedbacks page element
+ */
 function FeedbacksPage() {
   const loaderData = Route.useLoaderData() as LoaderData | undefined;
   const feedbacks = loaderData?.feedbacks ?? [];

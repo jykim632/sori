@@ -7,6 +7,15 @@ type Props = {
   initialApiKey: string | null;
 };
 
+/**
+ * Renders the API key management section for a project.
+ *
+ * Provides UI for viewing (masked or revealed), generating, copying, and revoking the project's API key. Newly generated keys are shown once for one-time copy.
+ *
+ * @param projectId - The ID of the project whose API key is managed.
+ * @param initialApiKey - The project's current API key, or `null` if none exists.
+ * @returns The API key management UI as a React element.
+ */
 export function ApiKeySection({ projectId, initialApiKey }: Props) {
   const [apiKey, setApiKey] = useState<string | null>(initialApiKey);
   const [showNewKey, setShowNewKey] = useState<string | null>(null);

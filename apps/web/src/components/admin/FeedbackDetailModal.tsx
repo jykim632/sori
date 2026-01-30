@@ -10,6 +10,16 @@ type Props = {
   onStatusChange: (id: string, currentStatus: string) => void;
 };
 
+/**
+ * Render a modal that shows detailed information for a feedback item and provides controls for status updates, copying a customer ticket link, and viewing replies.
+ *
+ * Displays the feedback type and project, message content, email, creation date, optional metadata (URL and user agent), an optional customer ticket link with a copy action, and a replies section. Provides buttons to change the feedback status and to close the modal.
+ *
+ * @param feedback - The feedback record to display, including project, message, email, createdAt, token, status, type, and optional metadata.
+ * @param onClose - Callback invoked when the modal should be closed (backdrop click, header close button, or footer close button).
+ * @param onStatusChange - Callback invoked with the feedback `id` and current `status` when the user requests a status change.
+ * @returns The feedback detail modal element.
+ */
 export function FeedbackDetailModal({ feedback, onClose, onStatusChange }: Props) {
   const [linkCopied, setLinkCopied] = useState(false);
 

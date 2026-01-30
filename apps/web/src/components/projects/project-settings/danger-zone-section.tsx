@@ -8,6 +8,16 @@ type Props = {
   onDeleteSuccess: () => void;
 };
 
+/**
+ * Render a danger-zone UI that allows a user to permanently delete a project.
+ *
+ * Displays a card with a "Delete" action that opens a confirmation modal requiring the user to type the exact `projectName` before the permanent delete action is enabled. When deletion is confirmed, the component performs the deletion for `projectId`, shows a loading state while the operation is in progress, and invokes `onDeleteSuccess` after a successful deletion.
+ *
+ * @param projectId - The identifier of the project to delete
+ * @param projectName - The exact project name the user must enter to confirm deletion
+ * @param onDeleteSuccess - Callback invoked after the project is successfully deleted
+ * @returns The danger zone React element with a conditional confirmation modal
+ */
 export function DangerZoneSection({ projectId, projectName, onDeleteSuccess }: Props) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
